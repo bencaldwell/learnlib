@@ -28,7 +28,12 @@ import de.learnlib.api.EquivalenceOracle;
 import de.learnlib.api.MembershipOracle;
 import de.learnlib.api.SULTimed;
 import de.learnlib.oracles.DefaultQuery;
+import java.util.ArrayList;
+import java.util.ListIterator;
+import java.util.logging.Logger;
+import net.automatalib.automata.concepts.MutableTransitionOutput;
 import net.automatalib.automata.transout.MealyMachine;
+import net.automatalib.automata.transout.impl.compact.CompactMealy;
 
 /**
  * Finds transitions with uncertain clock guards and "trims" them to smallest equivalent.
@@ -49,6 +54,31 @@ public class ClockExplorationEQOracle<I, O> implements
 	private int minDepth;
 	private int maxDepth;
 	private final SULTimed<I, O> sul;
+        private final static Logger LOGGER = Logger.getLogger(ClockExplorationEQOracle.class.getName());
+        
+        private static class TimedStep<I,O> {
+            private I input;
+            private O output;
+            
+            public TimedStep(I input, O output) {
+                this.input = input;
+                this.output = output;
+            }
+            
+            // copy constructor
+            public TimedStep(TimedStep other) {
+                this.input = (I)other.input;
+                this.output = (O)other.output;
+            }
+            
+            public I getInput() {
+                return input;
+            }
+            
+            public O getOutput() {
+                return output;
+            }
+        }
 	
 	/**
 	 * Constructor.
@@ -89,84 +119,105 @@ public class ClockExplorationEQOracle<I, O> implements
         
         private <S, T> DefaultQuery<I, Word<O>> doFindCounterExample(
 			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
-            
-		for(List<? extends I> symList : CollectionsUtil.allTuples(inputs, minDepth, maxDepth)) {
-
-                        S cur = hypothesis.getInitialState();
-                        S candidateState = null;
-                        I candidateInput = null;
-                        String candidateOutput = null;
-                        //TODO:
-                        /**
-                         * 1) Check for an unknown clock guard
-                         * 2) Trim the guard and see if the output and successor signature still match
-                         * 3) If equivalence is maintained then save the new query as a counterexample
-                         */
                         
-                        sul.pre();
-                        for (I sym : symList) {
-                            //TEST: check for uncertain clock guard - in the form "*[?TIME]*"
-                            String[] hypTokens = hypothesis.getOutput(cur, sym).toString().split("[\\[\\?\\]]");
-                            String hypOutput = hypTokens[0];
-                            if (candidateState != null) {
-                                //TODO: is the output different? Adjust the candidate if it was
-                                String[] sulTokens = sul.step(sym).toString().split("[\\[\\?\\]]");
-                                cur = hypothesis.getSuccessor(cur, sym); //update the position of the hypothesis to keep it locked to the SUL
-
-                                if (!sulTokens[0].contentEquals(hypOutput)) {
-                                    //TODO: The outputs are different the guard was overtrimmed - add 500ms back onto it?
-                                    
-                                }
-                                
-                                // Clear the candidates for the next round
-                                candidateState = null;
-                                candidateInput = null;
-                                candidateOutput = null;
+                        //TODO: find uncertain clock guards
+                        List<List<TimedStep>> uncertainPrefixes = findUncertainPrefixes(hypothesis, inputs);
+                        
+                        // TEST: while uncertain clock guards exist
+                        while (uncertainPrefixes != null && uncertainPrefixes.size()>0) {
+                            //TEST: trimmed uncertain guards - keep trimming or remove uncertainty
+                            for (List<TimedStep> prefix : uncertainPrefixes) {
+                                trimClockGuard(hypothesis, inputs, prefix);
                             }
-                            else if (hypTokens.length < 2) {
-                                // TODO: No candidates and no uncertain guards on this one, just step SUL and hypothesis
-                                
-                            }
-                            else {
-                                //TODO: there is existing candidate but there is a new candidate to check
-                                String hypOutput = tokens[0];
-                                long stepClockLimit = Long.valueOf(tokens[1]) * 1000L; // convert the guard in seconds to ms    
-
-                                //TODO: trim the guard
-                                long trimmedStepClockLimit = stepClockLimit > 500 ? stepClockLimit - 500 : 0;
-                                
-                                candidateState = cur;
-                                candidateInput = sym;
-
-                                //TODO: is the output different? Adjust the candidate if it was
-                                String output = sul.step(sym,trimmedStepClockLimit).toString();
-                                String[] outputTokens = output.split("[\\?\\]]");
-                                if (!outputTokens[0].contentEquals(hypOutput)) {
-                                    // The outputs are different the guard was overtrimmed
-                                    String certainOutput = 
-                                }
-                                
-                                //TODO: is the successor still the same?
-                                
-                            }
+                            
+                            //TEST: find remaining uncertain clock guards    
+                            uncertainPrefixes = findUncertainPrefixes(hypothesis, inputs);
                         }
-                        sul.post();
                         
-                        }
-                        Word<I> queryWord = Word.fromList(symList);
-			DefaultQuery<I,O> query = new DefaultQuery<>(queryWord);
-			O hypOutput = hypothesis.computeOutput(queryWord);                        
-                        
-                        //TODO: is the successor ID still the same?
-                        
-                        //TODO: if the trimmed guard maintains equivalence return it as a counterexample
-			
-			
-			if(!Objects.equals(hypOutput, query.getOutput()))
-				return query;
-		}
-		
 		return null;
 	}
+
+        private <S, T> List<List<TimedStep>> findUncertainPrefixes(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
+            List<List<TimedStep>> uncertainPrefixes = new ArrayList<>();
+
+            // Get all possible sequences of inputs from min depth to max depth
+            for(List<? extends I> symList : CollectionsUtil.allTuples(inputs, minDepth, maxDepth)) {
+                
+                S cur = hypothesis.getInitialState();
+                // collect all prefixes ending in a transition with uncertain clock guard
+                List<TimedStep> prefix = new ArrayList<>();
+                for (I sym : symList) { 
+                    O output = hypothesis.getOutput(cur, sym);
+                    cur = hypothesis.getSuccessor(cur, sym);
+                    prefix.add(new TimedStep(sym, output));
+                    
+                    // if this transition contains an uncertain clock guard then add it to the list to trim
+                    if (output.toString().contains("[?")) {
+                        uncertainPrefixes.add(prefix);
+                        // Copy the prefix to continue finding prefixes with uncertain clock guards
+                        List<TimedStep> newPrefix = new ArrayList<>();
+                        for (TimedStep step : prefix) {
+                            newPrefix.add(step);
+                        }
+                        prefix = newPrefix;
+                    }
+                }
+            }
+            return uncertainPrefixes;
+        }
+        
+        //TEST: does this trim guards?
+        private <S, T> void trimClockGuard(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs, List<TimedStep> uncertainPrefix) {
+            
+            for (I sym : inputs) {
+                S cur = hypothesis.getInitialState();
+                sul.pre();
+
+                ListIterator<TimedStep> iterator = uncertainPrefix.listIterator();
+                assert(uncertainPrefix.size() > 0);
+                TimedStep step = uncertainPrefix.get(0);
+                while (iterator.hasNext()) {
+                    step = iterator.next(); // next step
+
+                    // If this is the last step
+                    if (!iterator.hasNext()) {
+                        break;
+                    }
+                    else {
+                        sul.step((I)step.input);
+                        cur = hypothesis.getSuccessor(cur, (I)step.input);
+                    }
+                }
+                // perform the trimmed guard step
+                O uncertainOutput = hypothesis.getOutput(cur, sym);
+                assert(hypothesis instanceof MutableTransitionOutput);
+                T uncertainTransition = hypothesis.getTransition(cur, sym);
+                String[] tokens = uncertainOutput.toString().split("[\\[\\?\\]]");
+                assert(tokens.length > 1);
+                long clockGuard = Long.valueOf(tokens[1])*1000L; // get clockguard in ms
+                clockGuard -= 500L;
+                clockGuard = clockGuard < 500L ? 500L : clockGuard;
+                sul.step((I)step.input, clockGuard);
+                cur = hypothesis.getSuccessor(cur, (I)step.input);
+                
+                // check that the next symbol has the same output as the hypothesis
+                String expectedOutput = hypothesis.getOutput(cur, sym).toString();
+                String observedOutput = sul.step(sym).toString();
+                
+                // is the hypothesis output still uncertain?
+                if (observedOutput.contains("[?")) {
+                    if (expectedOutput.equalsIgnoreCase(observedOutput)) {
+                        // the trimmed guard did not affect the result so keep it trimmed and uncertain
+                        String newOutput = tokens[0]+"[?"+ Math.round(clockGuard*2/1000)/2 + "]";
+                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                    } else {
+                        // the trimmed guard affected the result - undo trim and remove uncertainty
+                        String newOutput = tokens[0]+"["+ tokens[1] + "]";
+                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                    }
+                }
+                sul.post();
+            }
+        }
 
 }
