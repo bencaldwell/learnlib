@@ -17,19 +17,16 @@
 package de.learnlib.eqtests.timed;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-
-import net.automatalib.automata.concepts.DetOutputAutomaton;
 import net.automatalib.commons.util.collections.CollectionsUtil;
 import net.automatalib.words.Word;
 import de.learnlib.api.EquivalenceOracle;
-import de.learnlib.api.MembershipOracle;
 import de.learnlib.api.SULTimed;
 import de.learnlib.oracles.DefaultQuery;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.logging.Logger;
 import net.automatalib.automata.concepts.MutableTransitionOutput;
 import net.automatalib.automata.transout.MealyMachine;
@@ -55,30 +52,6 @@ public class ClockExplorationEQOracle<I, O> implements
 	private int maxDepth;
 	private final SULTimed<I, O> sul;
         private final static Logger LOGGER = Logger.getLogger(ClockExplorationEQOracle.class.getName());
-        
-        private static class TimedStep<I,O> {
-            private I input;
-            private O output;
-            
-            public TimedStep(I input, O output) {
-                this.input = input;
-                this.output = output;
-            }
-            
-            // copy constructor
-            public TimedStep(TimedStep other) {
-                this.input = (I)other.input;
-                this.output = (O)other.output;
-            }
-            
-            public I getInput() {
-                return input;
-            }
-            
-            public O getOutput() {
-                return output;
-            }
-        }
 	
 	/**
 	 * Constructor.
@@ -120,62 +93,60 @@ public class ClockExplorationEQOracle<I, O> implements
         private <S, T> DefaultQuery<I, Word<O>> doFindCounterExample(
 			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
                         
-                        //TODO: find uncertain clock guards
-                        List<List<TimedStep>> uncertainPrefixes = findUncertainPrefixes(hypothesis, inputs);
+                        //TEST: find uncertain clock guards with accessor prefix
+                        HashMap<List<I>,Long> uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
                         
                         // TEST: while uncertain clock guards exist
                         while (uncertainPrefixes != null && uncertainPrefixes.size()>0) {
                             //TEST: trimmed uncertain guards - keep trimming or remove uncertainty
-                            for (List<TimedStep> prefix : uncertainPrefixes) {
-                                trimClockGuard(hypothesis, inputs, prefix);
+                            Iterator it = uncertainPrefixes.entrySet().iterator();
+                            while (it.hasNext()) {
+                                Map.Entry pairs = (Map.Entry)it.next();
+                                trimClockGuard(hypothesis, inputs, pairs);
                             }
                             
                             //TEST: find remaining uncertain clock guards    
-                            uncertainPrefixes = findUncertainPrefixes(hypothesis, inputs);
+                            uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
                         }
                         
 		return null;
 	}
 
-        private <S, T> List<List<TimedStep>> findUncertainPrefixes(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
-            List<List<TimedStep>> uncertainPrefixes = new ArrayList<>();
+        HashMap<List<I>,Long> findUncertainPrefixes(CompactMealy<I,O> hypothesis, Collection<? extends I> inputs) {
+            // TEST: Store access prefixes resulting in uncertain clock guards in a hash map (no duplicates?)
+            HashMap<List<I>,Long> uncertainPrefixes = new HashMap<>();
 
             // Get all possible sequences of inputs from min depth to max depth
             for(List<? extends I> symList : CollectionsUtil.allTuples(inputs, minDepth, maxDepth)) {
                 
-                S cur = hypothesis.getInitialState();
+                int cur = hypothesis.getInitialState();
                 // collect all prefixes ending in a transition with uncertain clock guard
-                List<TimedStep> prefix = new ArrayList<>();
+                O output = null;
                 for (I sym : symList) { 
-                    O output = hypothesis.getOutput(cur, sym);
+                    output = hypothesis.getOutput(cur, sym);
                     cur = hypothesis.getSuccessor(cur, sym);
-                    prefix.add(new TimedStep(sym, output));
-                    
-                    // if this transition contains an uncertain clock guard then add it to the list to trim
-                    if (output.toString().contains("[?")) {
-                        uncertainPrefixes.add(prefix);
-                        // Copy the prefix to continue finding prefixes with uncertain clock guards
-                        List<TimedStep> newPrefix = new ArrayList<>();
-                        for (TimedStep step : prefix) {
-                            newPrefix.add(step);
-                        }
-                        prefix = newPrefix;
-                    }
+                }
+                // if the last transition contains an uncertain clock guard then add it to the list to trim
+                if (outputContainsUncertainClockGuard(output.toString())) {
+                    long clockGuard = clockGuardFromOutput(output.toString()); // get clockguard in ms
+                    uncertainPrefixes.put((List<I>) symList, clockGuard);
                 }
             }
             return uncertainPrefixes;
         }
         
         //TEST: does this trim guards?
-        private <S, T> void trimClockGuard(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs, List<TimedStep> uncertainPrefix) {
-            
+        private <S, T> void trimClockGuard(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs, Map.Entry<List<I>,Long> uncertainPrefix) {
+            // The uncertain prefix comes as a hashmap pair with key: list of inputs <I> as a prefix; value: output <O> from the prefix
+            // For each suffix of the given uncertain prefix
             for (I sym : inputs) {
+                
+                // Follow the prefix in hypothesis and SUL
                 S cur = hypothesis.getInitialState();
                 sul.pre();
-
-                ListIterator<TimedStep> iterator = uncertainPrefix.listIterator();
-                assert(uncertainPrefix.size() > 0);
-                TimedStep step = uncertainPrefix.get(0);
+                ListIterator<I> iterator = uncertainPrefix.getKey().listIterator(); // for each <I> in the prefix
+                assert(uncertainPrefix.getKey().size() > 0);
+                I step = uncertainPrefix.getKey().get(0);
                 while (iterator.hasNext()) {
                     step = iterator.next(); // next step
 
@@ -184,40 +155,75 @@ public class ClockExplorationEQOracle<I, O> implements
                         break;
                     }
                     else {
-                        sul.step((I)step.input);
-                        cur = hypothesis.getSuccessor(cur, (I)step.input);
+                        sul.step(step);
+                        cur = hypothesis.getSuccessor(cur, step);
                     }
                 }
                 // perform the trimmed guard step
                 O uncertainOutput = hypothesis.getOutput(cur, sym);
                 assert(hypothesis instanceof MutableTransitionOutput);
                 T uncertainTransition = hypothesis.getTransition(cur, sym);
-                String[] tokens = uncertainOutput.toString().split("[\\[\\?\\]]");
-                assert(tokens.length > 1);
-                long clockGuard = Long.valueOf(tokens[1])*1000L; // get clockguard in ms
+                long clockGuard = uncertainPrefix.getValue();
                 clockGuard -= 500L;
                 clockGuard = clockGuard < 500L ? 500L : clockGuard;
-                sul.step((I)step.input, clockGuard);
-                cur = hypothesis.getSuccessor(cur, (I)step.input);
+                sul.step(step, clockGuard); // perform the step with trimmed clock guard on SUL
+                cur = hypothesis.getSuccessor(cur, step); // get the next step in the hypothesis
                 
-                // check that the next symbol has the same output as the hypothesis
+                // check that the next symbol (after the prefix) has the same output as the hypothesis
                 String expectedOutput = hypothesis.getOutput(cur, sym).toString();
                 String observedOutput = sul.step(sym).toString();
                 
-                // is the hypothesis output still uncertain?
-                if (observedOutput.contains("[?")) {
-                    if (expectedOutput.equalsIgnoreCase(observedOutput)) {
-                        // the trimmed guard did not affect the result so keep it trimmed and uncertain
-                        String newOutput = tokens[0]+"[?"+ Math.round(clockGuard*2/1000)/2 + "]";
-                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
-                    } else {
-                        // the trimmed guard affected the result - undo trim and remove uncertainty
-                        String newOutput = tokens[0]+"["+ tokens[1] + "]";
-                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
-                    }
+                // Did the trimmed guard cause loss of equivalence?
+                if (expectedOutput.equalsIgnoreCase(observedOutput)) {
+                    // the trimmed guard did not affect the result so keep it trimmed and uncertain
+                    String newOutput = symbolFromOutput(expectedOutput.toString()) +"[?"+ Math.round(clockGuard*2/1000)/2 + "]";
+                    ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                } else {
+                    // the trimmed guard affected the result - undo trim and remove uncertainty 
+                    String newOutput = symbolFromOutput(expectedOutput.toString()) +"["+ clockGuardFromOutput(expectedOutput.toString()) + "]";
+                    ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                    // Don't bother with any more suffixes
+                    break;
                 }
                 sul.post();
             }
         }
-
+        
+        static Long clockGuardFromOutput(String output) {
+            String[] tokens = output.split("[\\[\\?\\]]+");
+            if (tokens.length < 2) {
+                return null; // No clock guard from split
+            }
+            double secondsGuard = Double.valueOf(tokens[1]);
+            Long clockGuard = Math.round(secondsGuard*1000); // get clockguard in ms
+            return clockGuard;
+        }
+        
+        static String symbolFromOutput(String output) {
+            String[] tokens = output.split("[\\[\\?\\]]+");
+            if (tokens.length < 1) {
+                return null; // no tokens...?
+            }
+            String symbol = tokens[0]; // get clockguard in ms
+            return symbol;
+        }
+        
+        static boolean outputContainsUncertainClockGuard(String output) {
+            // If no ? then no uncertainty
+            if (!output.toString().contains("[?")) {
+                return false;
+            }
+            // Tokenise and attempt to parse a long from the guard
+            String[] tokens = output.split("[\\[\\?\\]]+");
+            if (tokens.length < 2) {
+                return false; // No clock guard from split
+            }
+            try {
+                Double secondsGuard = Double.parseDouble(tokens[1]);
+                Long clockGuard = Math.round(secondsGuard *1000);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            return true;
+        }
 }

@@ -71,6 +71,13 @@ http://www.gnu.de/documents/lgpl.en.html.
 			<groupId>de.learnlib.testsupport</groupId>
 			<artifactId>learnlib-learning-examples</artifactId>
 		</dependency>
+	 <dependency>
+	  <groupId>com.caldwellsoftware.plclearning</groupId>
+	  <artifactId>plc-learning</artifactId>
+	  <version>0.1-SNAPSHOT</version>
+	  <scope>test</scope>
+	  <type>jar</type>
+	 </dependency>
 	</dependencies>    
 
 </project>
