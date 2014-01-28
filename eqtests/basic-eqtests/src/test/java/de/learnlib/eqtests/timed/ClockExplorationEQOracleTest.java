@@ -104,7 +104,7 @@ public class ClockExplorationEQOracleTest {
         
         PLCSUL sul = null;
         int maxDepth = 3;
-        //TEST: clock trimming oracle works?
+        // clock trimming oracle works?
         ClockExplorationEQOracle eqoracle = new ClockExplorationEQOracle(sul, maxDepth);
         
         HashMap<List<Symbol>,Long> uncertainPrefixes = eqoracle.findUncertainPrefixes(hypothesis,alphabet);

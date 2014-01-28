@@ -96,19 +96,19 @@ public class ClockExplorationEQOracle<I, O> implements
         private <S, T> DefaultQuery<I, Word<O>> doFindCounterExample(
 			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
                         
-                        //TEST: find uncertain clock guards with accessor prefix
+                        // find uncertain clock guards with accessor prefix
                         HashMap<List<I>,Long> uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
                         
-                        // TEST: while uncertain clock guards exist
+                        // while uncertain clock guards exist
                         while (uncertainPrefixes != null && uncertainPrefixes.size()>0) {
-                            //TEST: trimmed uncertain guards - keep trimming or remove uncertainty
+                            // trimmed uncertain guards - keep trimming or remove uncertainty
                             Iterator it = uncertainPrefixes.entrySet().iterator();
                             while (it.hasNext()) {
                                 Map.Entry pairs = (Map.Entry)it.next();
                                 trimClockGuard(hypothesis, inputs, pairs);
                             }
                             
-                            //TEST: find remaining uncertain clock guards    
+                            // find remaining uncertain clock guards    
                             uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
                         }
                         
@@ -116,7 +116,7 @@ public class ClockExplorationEQOracle<I, O> implements
 	}
 
         HashMap<List<I>,Long> findUncertainPrefixes(CompactMealy<I,O> hypothesis, Collection<? extends I> inputs) {
-            // TEST: Store access prefixes resulting in uncertain clock guards in a hash map (no duplicates?)
+            // Store access prefixes resulting in uncertain clock guards in a hash map (no duplicates?)
             HashMap<List<I>,Long> uncertainPrefixes = new HashMap<>();
 
             // Get all possible sequences of inputs from min depth to max depth
@@ -140,7 +140,6 @@ public class ClockExplorationEQOracle<I, O> implements
             return uncertainPrefixes;
         }
         
-        //TEST: does this trim guards?
         private <S, T> void trimClockGuard(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs, Map.Entry<List<I>,Long> uncertainPrefix) {
             // The uncertain prefix comes as a hashmap pair with key: list of inputs <I> as a prefix; value: output <O> from the prefix
             // For each suffix of the given uncertain prefix
@@ -150,7 +149,6 @@ public class ClockExplorationEQOracle<I, O> implements
                 S cur = hypothesis.getInitialState();
                 sul.pre();
                 ListIterator<I> iterator = uncertainPrefix.getKey().listIterator(); // for each <I> in the prefix
-                assert(uncertainPrefix.getKey().size() > 0);
                 I step = uncertainPrefix.getKey().get(0);
                 while (iterator.hasNext()) {
                     step = iterator.next(); // next step
@@ -165,9 +163,8 @@ public class ClockExplorationEQOracle<I, O> implements
                     }
                 }
                 // perform the trimmed guard step
-                O uncertainOutput = hypothesis.getOutput(cur, sym);
-                assert(hypothesis instanceof MutableTransitionOutput);
-                T uncertainTransition = hypothesis.getTransition(cur, sym);
+                O uncertainOutput = hypothesis.getOutput(cur, step);
+                T uncertainTransition = hypothesis.getTransition(cur, step);
                 long clockGuard = uncertainPrefix.getValue();
                 clockGuard -= 500L;
                 clockGuard = clockGuard < 500L ? 500L : clockGuard;
@@ -181,11 +178,11 @@ public class ClockExplorationEQOracle<I, O> implements
                 // Did the trimmed guard cause loss of equivalence?
                 if (expectedOutput.equalsIgnoreCase(observedOutput)) {
                     // the trimmed guard did not affect the result so keep it trimmed and uncertain
-                    String newOutput = symbolFromOutput(expectedOutput.toString()) +"[?"+ Math.round(clockGuard*2/1000)/2 + "]";
+                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.round(clockGuard*2/1000)/2.0f + "]";
                     ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
                 } else {
                     // the trimmed guard affected the result - undo trim and remove uncertainty 
-                    String newOutput = symbolFromOutput(expectedOutput.toString()) +"["+ clockGuardFromOutput(expectedOutput.toString()) + "]";
+                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"["+ Math.round(uncertainPrefix.getValue()*2/1000)/2.0f + "]";
                     ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
                     // Don't bother with any more suffixes
                     break;
