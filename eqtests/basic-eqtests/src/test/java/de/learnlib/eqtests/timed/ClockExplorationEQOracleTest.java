@@ -108,8 +108,21 @@ public class ClockExplorationEQOracleTest {
         ClockExplorationEQOracle eqoracle = new ClockExplorationEQOracle(sul, maxDepth);
         
         HashMap<List<Symbol>,Long> uncertainPrefixes = eqoracle.findUncertainPrefixes(hypothesis,alphabet);
+
+        // Check for a sequence of inputs in the key that should be there
+        List<Symbol> testKey = new ArrayList<>();
+        testKey.add(rst);
+        testKey.add(in);
+        testKey.add(not_in);
+        Assert.assertTrue(uncertainPrefixes.containsKey(testKey));
         
-        Assert.assertEquals(uncertainPrefixes.size(), 63);
+        // Check for a sequence of inputs in the key that should *not* be there
+        testKey = new ArrayList<>();
+        testKey.add(rst);
+        testKey.add(not_in);
+        testKey.add(in);
+        
+        Assert.assertFalse(uncertainPrefixes.containsKey(testKey));
         
     }
 }

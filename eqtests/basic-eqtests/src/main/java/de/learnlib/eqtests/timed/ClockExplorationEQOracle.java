@@ -23,6 +23,8 @@ import net.automatalib.words.Word;
 import de.learnlib.api.EquivalenceOracle;
 import de.learnlib.api.SULTimed;
 import de.learnlib.oracles.DefaultQuery;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ListIterator;
@@ -31,6 +33,7 @@ import java.util.logging.Logger;
 import net.automatalib.automata.concepts.MutableTransitionOutput;
 import net.automatalib.automata.transout.MealyMachine;
 import net.automatalib.automata.transout.impl.compact.CompactMealy;
+import net.automatalib.words.impl.Symbol;
 
 /**
  * Finds transitions with uncertain clock guards and "trims" them to smallest equivalent.
@@ -129,7 +132,9 @@ public class ClockExplorationEQOracle<I, O> implements
                 // if the last transition contains an uncertain clock guard then add it to the list to trim
                 if (outputContainsUncertainClockGuard(output.toString())) {
                     long clockGuard = clockGuardFromOutput(output.toString()); // get clockguard in ms
-                    uncertainPrefixes.put((List<I>) symList, clockGuard);
+                    // Copy all symbols to a new list for storing in the uncertainprefixes map
+                    List<I> copySymList = new ArrayList<>(symList);
+                    uncertainPrefixes.put((List<I>) copySymList, clockGuard);
                 }
             }
             return uncertainPrefixes;
