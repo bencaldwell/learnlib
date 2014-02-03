@@ -109,20 +109,8 @@ public class ClockExplorationEQOracleTest {
         
         HashMap<List<Symbol>,Long> uncertainPrefixes = eqoracle.findUncertainPrefixes(hypothesis,alphabet);
 
-        // Check for a sequence of inputs in the key that should be there
-        List<Symbol> testKey = new ArrayList<>();
-        testKey.add(rst);
-        testKey.add(in);
-        testKey.add(not_in);
-        Assert.assertTrue(uncertainPrefixes.containsKey(testKey));
-        
-        // Check for a sequence of inputs in the key that should *not* be there
-        testKey = new ArrayList<>();
-        testKey.add(rst);
-        testKey.add(not_in);
-        testKey.add(in);
-        
-        Assert.assertFalse(uncertainPrefixes.containsKey(testKey));
+        // Check that the correct (minimal) number of prefixes was found
+        Assert.assertTrue(uncertainPrefixes.size() == 10);
         
     }
 }

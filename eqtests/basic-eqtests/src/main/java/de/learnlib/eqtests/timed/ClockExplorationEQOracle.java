@@ -25,10 +25,13 @@ import de.learnlib.api.SULTimed;
 import de.learnlib.oracles.DefaultQuery;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.automatalib.automata.concepts.MutableTransitionOutput;
 import net.automatalib.automata.transout.MealyMachine;
@@ -79,6 +82,12 @@ public class ClockExplorationEQOracle<I, O> implements
 		this.maxDepth = maxDepth;
 		
 		this.sul = sulOracle;
+                
+                LOGGER.setLevel(Level.FINE);
+                LOGGER.setUseParentHandlers(false);
+                ConsoleHandler handler = new ConsoleHandler();
+                handler.setLevel(Level.FINE);
+                LOGGER.addHandler(handler);
 	}
 
 	/**
@@ -93,51 +102,63 @@ public class ClockExplorationEQOracle<I, O> implements
 		return doFindCounterExample(hypothesis, inputs);
 	}
         
-        private <S, T> DefaultQuery<I, Word<O>> doFindCounterExample(
-			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
+        private <S, T> DefaultQuery<I, Word<O>> doFindCounterExample(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
                         
-                        // find uncertain clock guards with accessor prefix
-                        HashMap<List<I>,Long> uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
-                        
-                        // while uncertain clock guards exist
-                        while (uncertainPrefixes != null && uncertainPrefixes.size()>0) {
-                            // trimmed uncertain guards - keep trimming or remove uncertainty
-                            Iterator it = uncertainPrefixes.entrySet().iterator();
-                            while (it.hasNext()) {
-                                Map.Entry pairs = (Map.Entry)it.next();
-                                trimClockGuard(hypothesis, inputs, pairs);
-                            }
-                            
-                            // find remaining uncertain clock guards    
-                            uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
-                        }
+            LOGGER.fine("Started finding counter examples.");
+            
+            // find uncertain clock guards with accessor prefix
+            HashMap<List<I>,Long> uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
+
+            // while uncertain clock guards exist
+            while (uncertainPrefixes != null && uncertainPrefixes.size()>0) {
+                // trimmed uncertain guards - keep trimming or remove uncertainty
+                Iterator it = uncertainPrefixes.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry pairs = (Map.Entry)it.next();
+                    trimClockGuard(hypothesis, inputs, pairs);
+                }
+
+                // find remaining uncertain clock guards    
+                uncertainPrefixes = findUncertainPrefixes((CompactMealy<I,O>)hypothesis, inputs);
+            }
                         
 		return null;
 	}
 
         HashMap<List<I>,Long> findUncertainPrefixes(CompactMealy<I,O> hypothesis, Collection<? extends I> inputs) {
+ 
+            LOGGER.fine("Started uncertain prefixes.");
+            
             // Store access prefixes resulting in uncertain clock guards in a hash map (no duplicates?)
             HashMap<List<I>,Long> uncertainPrefixes = new HashMap<>();
 
-            // Get all possible sequences of inputs from min depth to max depth
-            for(List<? extends I> symList : CollectionsUtil.allTuples(inputs, minDepth, maxDepth)) {
-                
-                int cur = hypothesis.getInitialState();
-                // collect all prefixes ending in a transition with uncertain clock guard
-                O output = null;
-                for (I sym : symList) { 
-                    output = hypothesis.getOutput(cur, sym);
-                    cur = hypothesis.getSuccessor(cur, sym);
-                }
-                // if the last transition contains an uncertain clock guard then add it to the list to trim
-                if (outputContainsUncertainClockGuard(output.toString())) {
-                    long clockGuard = clockGuardFromOutput(output.toString()); // get clockguard in ms
-                    // Copy all symbols to a new list for storing in the uncertainprefixes map
-                    List<I> copySymList = new ArrayList<>(symList);
-                    uncertainPrefixes.put((List<I>) copySymList, clockGuard);
+            for (Integer state : hypothesis.getStates()) {
+                List<? extends I> prefix = findAccessPrefix(state, hypothesis, inputs);
+                for (I sym : inputs) { 
+                    O output = hypothesis.getOutput(state, sym);
+                    // if the last transition contains an uncertain clock guard then add it to the list to trim
+                    if (outputContainsUncertainClockGuard(output.toString())) {
+                        long clockGuard = clockGuardFromOutput(output.toString()); // get clockguard in ms
+                        // Copy all symbols to a new list for storing in the uncertainprefixes map
+                        List<I> copySymList = new ArrayList<>(prefix);
+                        copySymList.add(sym);
+                        uncertainPrefixes.put((List<I>) copySymList, clockGuard);
+                        LOGGER.fine("Added uncertain prefix: " + copySymList.toString());
+                    }
                 }
             }
             return uncertainPrefixes;
+        }
+        
+        List<? extends I> findAccessPrefix(Integer state, CompactMealy<I,O> hypothesis, Collection<? extends I> inputs) {
+            int cur = hypothesis.getInitialState();
+            // Get all possible sequences of inputs from min depth to max depth
+            for(List<? extends I> prefix : CollectionsUtil.allTuples(inputs, minDepth, maxDepth)) {
+                if (hypothesis.getState(prefix) == state) {
+                    return prefix;
+                }
+            }
+            return null;
         }
         
         private <S, T> void trimClockGuard(MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs, Map.Entry<List<I>,Long> uncertainPrefix) {
