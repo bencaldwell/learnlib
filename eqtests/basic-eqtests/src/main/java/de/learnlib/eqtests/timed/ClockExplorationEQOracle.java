@@ -194,16 +194,25 @@ public class ClockExplorationEQOracle<I, O> implements
                 
                 // check that the next symbol (after the prefix) has the same output as the hypothesis
                 String expectedOutput = hypothesis.getOutput(cur, sym).toString();
-                String observedOutput = sul.step(sym).toString();
+                // use the clock guard from hypothesis for SUL clock limit so we get identical outputs
+                String observedOutput;
+                if (clockGuardFromOutput(expectedOutput)!=null) {
+                    long clockLimit = clockGuardFromOutput(expectedOutput);
+                    observedOutput = sul.step(sym, clockLimit).toString();
+                } else {
+                    observedOutput = sul.step(sym).toString();
+                }
                 
                 // Did the trimmed guard cause loss of equivalence?
                 if (expectedOutput.equalsIgnoreCase(observedOutput)) {
                     // the trimmed guard did not affect the result so keep it trimmed and uncertain
                     String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.round(clockGuard*2/1000)/2.0f + "]";
+                    LOGGER.fine("Trimmed clock guard is still uncertain: " + uncertainPrefix.toString() + "/" + newOutput);
                     ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
                 } else {
                     // the trimmed guard affected the result - undo trim and remove uncertainty 
                     String newOutput = symbolFromOutput(uncertainOutput.toString()) +"["+ Math.round(uncertainPrefix.getValue()*2/1000)/2.0f + "]";
+                    LOGGER.fine("Trimmed clock guard uncertainty removed: " + uncertainPrefix.toString() + "/" + newOutput);
                     ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
                     // Don't bother with any more suffixes
                     break;
