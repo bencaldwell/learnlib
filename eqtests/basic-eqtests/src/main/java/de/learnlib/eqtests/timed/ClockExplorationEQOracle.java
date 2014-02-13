@@ -206,10 +206,17 @@ public class ClockExplorationEQOracle<I, O> implements
                 
                 // Did the trimmed guard cause loss of equivalence?
                 if (expectedOutput.equalsIgnoreCase(observedOutput)) {
-                    // the trimmed guard did not affect the result so keep it trimmed and uncertain
-                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.floor(clockGuard/1000.0f) + "]";
-                    LOGGER.fine("Trimmed clock guard is still uncertain: " + uncertainPrefix.toString() + "/" + newOutput);
-                    ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                    if (clockGuard <= 0L) {
+                       // Trimmed all the way to zero so there is no guard
+                        String newOutput = symbolFromOutput(uncertainOutput.toString());
+                        LOGGER.fine("Trimmed clock guard to zero and removed: " + uncertainPrefix.toString() + "/" + newOutput);
+                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                    } else {
+                        // the trimmed guard did not affect the result so keep it trimmed and uncertain
+                        String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.floor(clockGuard/1000.0f) + "]";
+                        LOGGER.fine("Trimmed clock guard is still uncertain: " + uncertainPrefix.toString() + "/" + newOutput);
+                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                    }
                 } else {
                     // the trimmed guard affected the result - undo trim and remove uncertainty 
                     String newOutput = symbolFromOutput(uncertainOutput.toString()) +"["+ Math.floor(uncertainPrefix.getValue()/1000.0f) + "]";
