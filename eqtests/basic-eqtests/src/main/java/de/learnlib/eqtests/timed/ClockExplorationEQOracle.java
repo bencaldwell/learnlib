@@ -58,7 +58,8 @@ public class ClockExplorationEQOracle<I, O> implements
 	private int maxDepth;
 	private final SULTimed<I, O> sul;
         private final static Logger LOGGER = Logger.getLogger(ClockExplorationEQOracle.class.getName());
-	
+	private long trimTime = 1000L; // the amount of time to trim off clock guards
+        
 	/**
 	 * Constructor.
 	 * @param sulOracle interface to the system under learning
@@ -187,8 +188,8 @@ public class ClockExplorationEQOracle<I, O> implements
                 O uncertainOutput = hypothesis.getOutput(cur, step);
                 T uncertainTransition = hypothesis.getTransition(cur, step);
                 long clockGuard = uncertainPrefix.getValue();
-                clockGuard -= 500L;
-                clockGuard = clockGuard < 500L ? 500L : clockGuard;
+                clockGuard -= trimTime;
+                clockGuard = clockGuard < 0 ? 0 : clockGuard;
                 sul.step(step, clockGuard); // perform the step with trimmed clock guard on SUL
                 cur = hypothesis.getSuccessor(cur, step); // get the next step in the hypothesis
                 
@@ -206,12 +207,12 @@ public class ClockExplorationEQOracle<I, O> implements
                 // Did the trimmed guard cause loss of equivalence?
                 if (expectedOutput.equalsIgnoreCase(observedOutput)) {
                     // the trimmed guard did not affect the result so keep it trimmed and uncertain
-                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.round(clockGuard*2/1000)/2.0f + "]";
+                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.floor(clockGuard/1000.0f) + "]";
                     LOGGER.fine("Trimmed clock guard is still uncertain: " + uncertainPrefix.toString() + "/" + newOutput);
                     ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
                 } else {
                     // the trimmed guard affected the result - undo trim and remove uncertainty 
-                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"["+ Math.round(uncertainPrefix.getValue()*2/1000)/2.0f + "]";
+                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"["+ Math.floor(uncertainPrefix.getValue()/1000.0f) + "]";
                     LOGGER.fine("Trimmed clock guard uncertainty removed: " + uncertainPrefix.toString() + "/" + newOutput);
                     ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
                     // Don't bother with any more suffixes
