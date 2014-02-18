@@ -113,4 +113,16 @@ public class ClockExplorationEQOracleTest {
         Assert.assertTrue(uncertainPrefixes.size() == 10);
         
     }
+    
+    @Test
+    public void testOutputCompare() {
+        String observed = "1[6.0]";
+        String expected = "1[?6.0]";
+        Assert.assertTrue(ClockExplorationEQOracle.outputsAreEquivalent(observed, expected));
+        
+        observed = "1[?10.0]";
+        expected = "1";
+        Assert.assertTrue(ClockExplorationEQOracle.outputsAreEquivalent(observed, expected));
+        
+    }
 }

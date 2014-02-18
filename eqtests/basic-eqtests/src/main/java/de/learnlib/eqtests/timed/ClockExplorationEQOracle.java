@@ -205,7 +205,7 @@ public class ClockExplorationEQOracle<I, O> implements
                 }
                 
                 // Did the trimmed guard cause loss of equivalence?
-                if (expectedOutput.equalsIgnoreCase(observedOutput)) {
+                if (outputsAreEquivalent(observedOutput, expectedOutput)) {
                     if (clockGuard <= 0L) {
                        // Trimmed all the way to zero so there is no guard
                         String newOutput = symbolFromOutput(uncertainOutput.toString());
@@ -265,5 +265,36 @@ public class ClockExplorationEQOracle<I, O> implements
                 return false;
             }
             return true;
+        }
+        
+        static boolean outputsAreEquivalent(String observed, String expected) {
+            String observedSym = symbolFromOutput(observed);
+            String expectedSym = symbolFromOutput(expected);
+            if (!observedSym.equalsIgnoreCase(expectedSym)) {
+                return false;
+            }
+            Long observedGuard = clockGuardFromOutput(observed);
+            Long expectedGuard = clockGuardFromOutput(expected);
+            boolean observedIsUncertain = outputContainsUncertainClockGuard(observed);
+            boolean expectedIsUncertain = outputContainsUncertainClockGuard(expected);
+            
+            // If both guards are null then the outputs can be equivalent
+            if (expectedGuard == null && observedGuard == null) {
+                return true;
+            } 
+            
+            /* If the expected guard is null and the observed is > 0 this is an unobservable transition
+            and the observed guard has just timed to the limit
+            */
+            if (expectedGuard == null && observedIsUncertain) {
+                return true;
+            }
+            
+            // If both guards have the same value then the outputs are equal
+            if (observedGuard.longValue() == expectedGuard.longValue()) {
+                return true;
+            }
+            
+            return false;
         }
 }
