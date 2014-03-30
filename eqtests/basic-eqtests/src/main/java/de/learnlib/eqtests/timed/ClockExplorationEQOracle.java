@@ -24,8 +24,6 @@ import de.learnlib.api.EquivalenceOracle;
 import de.learnlib.api.SULTimed;
 import de.learnlib.oracles.DefaultQuery;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ListIterator;
@@ -36,7 +34,6 @@ import java.util.logging.Logger;
 import net.automatalib.automata.concepts.MutableTransitionOutput;
 import net.automatalib.automata.transout.MealyMachine;
 import net.automatalib.automata.transout.impl.compact.CompactMealy;
-import net.automatalib.words.impl.Symbol;
 
 /**
  * Finds transitions with uncertain clock guards and "trims" them to smallest equivalent.
