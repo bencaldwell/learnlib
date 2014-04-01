@@ -40,6 +40,12 @@ import net.automatalib.automata.transout.impl.compact.CompactMealy;
  * 
  * Performs a complete exploration checking for outputs tagged with [?] clock guards.
  * The step clock limit is trimmed and output compared to see if the trim still results in equivalence.
+ *         
+ * Clock discovery walk:
+ * 1) For each outgoing transition check the guard on the output and see if we can do it faster
+ * 2) The output must match the hypothesis output
+ * 3) The successor state signature must match the hypothesis successor state signature
+ * 4) If output and successor match then "trim" the clock guard
  * 
  * Based on CompleteExplorationEQOracle by Malte Isberner.
  * 
