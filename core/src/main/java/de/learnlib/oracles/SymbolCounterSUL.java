@@ -23,6 +23,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import de.learnlib.api.SUL;
 import de.learnlib.statistics.Counter;
 import de.learnlib.statistics.StatisticSUL;
+import java.io.IOException;
 
 @ParametersAreNonnullByDefault
 public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
@@ -39,7 +40,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 * @see de.learnlib.api.SUL#pre()
 	 */
 	@Override
-	public void pre() {
+	public void pre() throws IOException {
 		sul.pre();
 	}
 
@@ -48,7 +49,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 * @see de.learnlib.api.SUL#post()
 	 */
         @Override
-	public void post() {
+	public void post() throws IOException {
 		sul.post();
 	}
 
@@ -57,7 +58,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 */
 	@Override
 	@Nullable
-	public O step(@Nullable I in) {
+	public O step(@Nullable I in) throws IOException {
 		counter.increment();
 		return sul.step(in);
 	}

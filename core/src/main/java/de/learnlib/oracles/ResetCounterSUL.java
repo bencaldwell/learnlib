@@ -23,6 +23,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import de.learnlib.api.SUL;
 import de.learnlib.statistics.Counter;
 import de.learnlib.statistics.StatisticSUL;
+import java.io.IOException;
 
 @ParametersAreNonnullByDefault
 public class ResetCounterSUL<I, O> implements StatisticSUL<I, O> {
@@ -36,19 +37,19 @@ public class ResetCounterSUL<I, O> implements StatisticSUL<I, O> {
 	}
 
             @Override
-            public void pre() {
+            public void pre() throws IOException {
                     counter.increment();
                     sul.pre();
             }
 
             @Override
-            public void post() {
+            public void post() throws IOException {
                     sul.post();
             }
         
 	@Override
 	@Nullable
-	public O step(@Nullable I in) {
+	public O step(@Nullable I in) throws IOException {
 		return sul.step(in);
 	}
 

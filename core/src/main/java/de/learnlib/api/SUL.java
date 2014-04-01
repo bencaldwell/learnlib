@@ -16,6 +16,7 @@
  */
 package de.learnlib.api;
 
+import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
@@ -31,12 +32,12 @@ public interface SUL<I, O> {
     /**
      * setup SUL.
      */
-    void pre();
+    void pre() throws IOException;
 
     /**
      * shut down SUL.
      */
-    void post();
+    void post() throws IOException;
     
     /**
      * make one step on the SUL.
@@ -45,5 +46,5 @@ public interface SUL<I, O> {
      * @return output of SUL
      */
     @Nullable
-    O step(@Nullable I in);
+    O step(@Nullable I in) throws IOException;
 }

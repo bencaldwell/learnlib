@@ -28,6 +28,8 @@ import net.automatalib.words.WordBuilder;
 import de.learnlib.api.EquivalenceOracle.MealyEquivalenceOracle;
 import de.learnlib.api.SUL;
 import de.learnlib.oracles.DefaultQuery;
+import java.io.IOException;
+import java.util.logging.Level;
 
 /**
  * Performs a random walk over the hypothesis. A random walk restarts with a
@@ -110,11 +112,16 @@ public class RandomWalkEQOracle<I, O>
 	@Override
 	public DefaultQuery<I, Word<O>> findCounterExample(MealyMachine<?,I,?,O> hypothesis,
 			Collection<? extends I> inputs) {
-		return doFindCounterExample(hypothesis, inputs);
+            try {
+                return doFindCounterExample(hypothesis, inputs);
+            } catch (IOException ex) {
+                Logger.getLogger(RandomWalkEQOracle.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            return null;
 	}
 
 	private <S, T> DefaultQuery<I, Word<O>> doFindCounterExample(
-			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
+			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) throws IOException {
 		// reset termination counter?
 		if (resetStepCount) {
 			steps = 0;

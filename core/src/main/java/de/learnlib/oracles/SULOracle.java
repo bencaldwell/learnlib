@@ -23,6 +23,9 @@ import net.automatalib.words.Word;
 import net.automatalib.words.WordBuilder;
 import de.learnlib.api.MembershipOracle.MealyMembershipOracle;
 import de.learnlib.api.SUL;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A wrapper around a system under learning (SUL).
@@ -33,7 +36,9 @@ import de.learnlib.api.SUL;
 public class SULOracle<I, O> extends AbstractSingleQueryOracle<I, Word<O>> implements MealyMembershipOracle<I,O> {
 
 	private final SUL<I, O> sul;
-
+        private final static int RETRY_ATTEMPTS = 20;
+        private final static Logger LOGGER = Logger.getGlobal();
+        
 	public SULOracle(SUL<I, O> sul) {
 		this.sul = sul;
 	}
@@ -41,20 +46,37 @@ public class SULOracle<I, O> extends AbstractSingleQueryOracle<I, Word<O>> imple
 	@Override
 	@Nonnull
 	public Word<O> answerQuery(Word<I> prefix, Word<I> suffix) {
-		sul.pre();
-		// Prefix: Execute symbols, don't record output
-		for(I sym : prefix) {
-			sul.step(sym);
-		}
-		
-		// Suffix: Execute symbols, outputs constitute output word
-		WordBuilder<O> wb = new WordBuilder<>(suffix.length());
-		for(I sym : suffix) {
-			wb.add(sul.step(sym));
-		}
-		
-        sul.post();
-		return wb.toWord();
+            
+            // if the step fails retry up to a limit
+            int retries = 0;
+            while (retries < RETRY_ATTEMPTS) {
+                try {    
+                    sul.pre();
+                    // Prefix: Execute symbols, don't record output
+                    for(I sym : prefix) {
+                            sul.step(sym);
+                    }
+
+                    // Suffix: Execute symbols, outputs constitute output word
+                    WordBuilder<O> wb = new WordBuilder<>(suffix.length());
+                    for(I sym : suffix) {
+                            wb.add(sul.step(sym));
+                    }
+                    sul.post();
+                    return wb.toWord();
+                } catch (IOException e) {
+                    try {
+                        sul.post();
+                    } catch (IOException ex) {
+                        Logger.getLogger(SULOracle.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    retries++;
+                }
+            }
+            // if we get to here we've tried too many times with this query
+            LOGGER.severe("SUL failed to answer a query");
+            System.exit(-1);
+            return null;
 	}
 
 }

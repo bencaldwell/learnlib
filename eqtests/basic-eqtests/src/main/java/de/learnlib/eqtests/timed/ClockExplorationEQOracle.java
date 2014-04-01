@@ -16,16 +16,15 @@
  */
 package de.learnlib.eqtests.timed;
 
-import java.util.Collection;
-import java.util.List;
-import net.automatalib.commons.util.collections.CollectionsUtil;
-import net.automatalib.words.Word;
 import de.learnlib.api.EquivalenceOracle;
 import de.learnlib.api.SULTimed;
 import de.learnlib.oracles.DefaultQuery;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.logging.ConsoleHandler;
@@ -34,6 +33,8 @@ import java.util.logging.Logger;
 import net.automatalib.automata.concepts.MutableTransitionOutput;
 import net.automatalib.automata.transout.MealyMachine;
 import net.automatalib.automata.transout.impl.compact.CompactMealy;
+import net.automatalib.commons.util.collections.CollectionsUtil;
+import net.automatalib.words.Word;
 
 /**
  * Finds transitions with uncertain clock guards and "trims" them to smallest equivalent.
@@ -163,66 +164,74 @@ public class ClockExplorationEQOracle<I, O> implements
             // The uncertain prefix comes as a hashmap pair with key: list of inputs <I> as a prefix; value: output <O> from the prefix
             // For each suffix of the given uncertain prefix
             for (I sym : inputs) {
-                
-                // Follow the prefix in hypothesis and SUL
-                S cur = hypothesis.getInitialState();
-                sul.pre();
-                ListIterator<I> iterator = uncertainPrefix.getKey().listIterator(); // for each <I> in the prefix
-                I step = uncertainPrefix.getKey().get(0);
-                while (iterator.hasNext()) {
-                    step = iterator.next(); // next step
+                try {
+                    // Follow the prefix in hypothesis and SUL
+                    S cur = hypothesis.getInitialState();
+                    sul.pre();
+                    ListIterator<I> iterator = uncertainPrefix.getKey().listIterator(); // for each <I> in the prefix
+                    I step = uncertainPrefix.getKey().get(0);
+                    while (iterator.hasNext()) {
+                        step = iterator.next(); // next step
 
-                    // If this is the last step
-                    if (!iterator.hasNext()) {
+                        // If this is the last step
+                        if (!iterator.hasNext()) {
+                            break;
+                        }
+                        else {
+                            sul.step(step);
+                            cur = hypothesis.getSuccessor(cur, step);
+                        }
+                    }
+                    // perform the trimmed guard step
+                    O uncertainOutput = hypothesis.getOutput(cur, step);
+                    T uncertainTransition = hypothesis.getTransition(cur, step);
+                    long clockGuard = uncertainPrefix.getValue();
+                    clockGuard -= trimTime;
+                    clockGuard = clockGuard < 0 ? 0 : clockGuard;
+                    sul.step(step, clockGuard); // perform the step with trimmed clock guard on SUL
+                    cur = hypothesis.getSuccessor(cur, step); // get the next step in the hypothesis
+
+                    // check that the next symbol (after the prefix) has the same output as the hypothesis
+                    String expectedOutput = hypothesis.getOutput(cur, sym).toString();
+                    // use the clock guard from hypothesis for SUL clock limit so we get identical outputs
+                    String observedOutput;
+                    if (clockGuardFromOutput(expectedOutput)!=null) {
+                        long clockLimit = clockGuardFromOutput(expectedOutput);
+                        observedOutput = sul.step(sym, clockLimit).toString();
+                    } else {
+                        observedOutput = sul.step(sym).toString();
+                    }
+
+                    // Did the trimmed guard cause loss of equivalence?
+                    if (outputsAreEquivalent(observedOutput, expectedOutput)) {
+                        if (clockGuard <= 0L) {
+                           // Trimmed all the way to zero so there is no guard
+                            String newOutput = symbolFromOutput(uncertainOutput.toString());
+                            LOGGER.fine("Trimmed clock guard to zero and removed: " + uncertainPrefix.toString() + "/" + newOutput);
+                            ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                        } else {
+                            // the trimmed guard did not affect the result so keep it trimmed and uncertain
+                            String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.floor(clockGuard/1000.0f) + "]";
+                            LOGGER.fine("Trimmed clock guard is still uncertain: " + uncertainPrefix.toString() + "/" + newOutput);
+                            ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                        }
+                    } else {
+                        // the trimmed guard affected the result - undo trim and remove uncertainty 
+                        String newOutput = symbolFromOutput(uncertainOutput.toString()) +"["+ Math.floor(uncertainPrefix.getValue()/1000.0f) + "]";
+                        LOGGER.fine("Trimmed clock guard uncertainty removed: " + uncertainPrefix.toString() + "/" + newOutput);
+                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
+                        // Don't bother with any more suffixes
                         break;
                     }
-                    else {
-                        sul.step(step);
-                        cur = hypothesis.getSuccessor(cur, step);
+                } catch (IOException e) {
+                    LOGGER.warning("SUL connection failed while trimming clock guard: " + e.toString());
+                } finally {
+                    try {
+                        sul.post();
+                    } catch (IOException ex) {
+                        Logger.getLogger(ClockExplorationEQOracle.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
-                // perform the trimmed guard step
-                O uncertainOutput = hypothesis.getOutput(cur, step);
-                T uncertainTransition = hypothesis.getTransition(cur, step);
-                long clockGuard = uncertainPrefix.getValue();
-                clockGuard -= trimTime;
-                clockGuard = clockGuard < 0 ? 0 : clockGuard;
-                sul.step(step, clockGuard); // perform the step with trimmed clock guard on SUL
-                cur = hypothesis.getSuccessor(cur, step); // get the next step in the hypothesis
-                
-                // check that the next symbol (after the prefix) has the same output as the hypothesis
-                String expectedOutput = hypothesis.getOutput(cur, sym).toString();
-                // use the clock guard from hypothesis for SUL clock limit so we get identical outputs
-                String observedOutput;
-                if (clockGuardFromOutput(expectedOutput)!=null) {
-                    long clockLimit = clockGuardFromOutput(expectedOutput);
-                    observedOutput = sul.step(sym, clockLimit).toString();
-                } else {
-                    observedOutput = sul.step(sym).toString();
-                }
-                
-                // Did the trimmed guard cause loss of equivalence?
-                if (outputsAreEquivalent(observedOutput, expectedOutput)) {
-                    if (clockGuard <= 0L) {
-                       // Trimmed all the way to zero so there is no guard
-                        String newOutput = symbolFromOutput(uncertainOutput.toString());
-                        LOGGER.fine("Trimmed clock guard to zero and removed: " + uncertainPrefix.toString() + "/" + newOutput);
-                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
-                    } else {
-                        // the trimmed guard did not affect the result so keep it trimmed and uncertain
-                        String newOutput = symbolFromOutput(uncertainOutput.toString()) +"[?"+ Math.floor(clockGuard/1000.0f) + "]";
-                        LOGGER.fine("Trimmed clock guard is still uncertain: " + uncertainPrefix.toString() + "/" + newOutput);
-                        ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
-                    }
-                } else {
-                    // the trimmed guard affected the result - undo trim and remove uncertainty 
-                    String newOutput = symbolFromOutput(uncertainOutput.toString()) +"["+ Math.floor(uncertainPrefix.getValue()/1000.0f) + "]";
-                    LOGGER.fine("Trimmed clock guard uncertainty removed: " + uncertainPrefix.toString() + "/" + newOutput);
-                    ((MutableTransitionOutput)hypothesis).setTransitionOutput(uncertainTransition, newOutput);
-                    // Don't bother with any more suffixes
-                    break;
-                }
-                sul.post();
             }
         }
         

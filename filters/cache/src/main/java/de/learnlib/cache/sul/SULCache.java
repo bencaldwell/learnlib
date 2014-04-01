@@ -26,6 +26,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import de.learnlib.api.SUL;
 import de.learnlib.cache.LearningCache.MealyLearningCache;
 import de.learnlib.cache.mealy.MealyCacheConsistencyTest;
+import java.io.IOException;
 
 import net.automatalib.incremental.mealy.IncrementalMealyBuilder;
 import net.automatalib.incremental.mealy.dag.IncrementalMealyDAGBuilder;
@@ -101,7 +102,7 @@ public class SULCache<I, O> implements SUL<I, O>, MealyLearningCache<I,O> {
 		}
 		
 		@Nullable
-		public O step(@Nullable I in) {
+		public O step(@Nullable I in) throws IOException {
 			O out = null;
 			
 			if(current != null) {
@@ -197,7 +198,7 @@ public class SULCache<I, O> implements SUL<I, O>, MealyLearningCache<I,O> {
 	 * @see de.learnlib.api.SUL#step(java.lang.Object)
 	 */
 	@Override
-	public O step(I in) {
+	public O step(I in) throws IOException {
 		return impl.step(in);
 	}
 	
