@@ -54,7 +54,7 @@ public class ClockExplorationEQOracle<I, O> implements
 	private int minDepth;
 	private int maxDepth;
 	private final SULTimed<I, O> sul;
-        private final static Logger LOGGER = Logger.getLogger(ClockExplorationEQOracle.class.getName());
+        private final static Logger LOGGER = Logger.getGlobal();
 	private long trimTime = 1000L; // the amount of time to trim off clock guards
         
 	/**
@@ -80,12 +80,6 @@ public class ClockExplorationEQOracle<I, O> implements
 		this.maxDepth = maxDepth;
 		
 		this.sul = sulOracle;
-                
-                LOGGER.setLevel(Level.FINE);
-                LOGGER.setUseParentHandlers(false);
-                ConsoleHandler handler = new ConsoleHandler();
-                handler.setLevel(Level.FINE);
-                LOGGER.addHandler(handler);
 	}
 
 	/**
