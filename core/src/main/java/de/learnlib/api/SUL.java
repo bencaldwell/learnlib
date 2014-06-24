@@ -16,7 +16,6 @@
  */
 package de.learnlib.api;
 
-import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**

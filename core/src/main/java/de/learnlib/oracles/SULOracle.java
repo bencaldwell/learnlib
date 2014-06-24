@@ -21,7 +21,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import de.learnlib.api.MembershipOracle.MealyMembershipOracle;
 import de.learnlib.api.SUL;
-import java.io.IOException;
+import de.learnlib.api.SULException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,7 +46,7 @@ public class SULOracle<I, O> extends AbstractSingleQueryOracle<I, Word<O>> imple
 
 	@Override
 	@Nonnull
-	public Word<O> answerQuery(Word<I> prefix, Word<I> suffix) {
+	public Word<O> answerQuery(Word<I> prefix, Word<I> suffix) throws SULException {
             
             // if the step fails retry up to a limit
             int retries = 0;

@@ -40,7 +40,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 * @see de.learnlib.api.SUL#pre()
 	 */
 	@Override
-	public void pre() {
+	public void pre() throws SULException {
 		sul.pre();
 	}
 
@@ -49,7 +49,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 * @see de.learnlib.api.SUL#post()
 	 */
         @Override
-	public void post() {
+	public void post() throws SULException {
 		sul.post();
 	}
 

@@ -37,13 +37,13 @@ public class ResetCounterSUL<I, O> implements StatisticSUL<I, O> {
 	}
 
             @Override
-            public void pre() throws IOException {
+            public void pre() throws SULException {
                     counter.increment();
                     sul.pre();
             }
 
             @Override
-            public void post() throws IOException {
+            public void post() throws SULException {
                     sul.post();
             }
         
