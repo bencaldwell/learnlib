@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 
 import net.automatalib.words.Word;
 
-public abstract class Query<I, O> {
+public abstract class Query<I, D> {
 	
 	private int hashCode = 0;
 	
@@ -30,7 +30,7 @@ public abstract class Query<I, O> {
 	@Nonnull
 	public abstract Word<I> getSuffix();
 	
-	public abstract void answer(@Nullable O output);
+	public abstract void answer(@Nullable D output);
 	
 	@Nonnull
 	public final Word<I> getInput() {
@@ -85,8 +85,8 @@ public abstract class Query<I, O> {
 	/**
 	 * Returns the string representation of this query.
 	 *
-	 * @return A string of the form "Query[<prefix>|<suffix>]" for queries not containing
-	 * an answer or "Query[<prefix>|<suffix> / <answer>]" if an answer may be specified.
+	 * @return A string of the form {@code "Query[<prefix>|<suffix>]"} for queries not containing
+	 * an answer or {@code "Query[<prefix>|<suffix> / <answer>]"} if an answer may be specified.
 	 */
 	@Override
 	public String toString() {

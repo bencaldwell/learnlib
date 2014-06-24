@@ -19,13 +19,14 @@ package de.learnlib.oracles;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.automatalib.words.Word;
-import net.automatalib.words.WordBuilder;
 import de.learnlib.api.MembershipOracle.MealyMembershipOracle;
 import de.learnlib.api.SUL;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import net.automatalib.words.Word;
+import net.automatalib.words.WordBuilder;
 
 /**
  * A wrapper around a system under learning (SUL).

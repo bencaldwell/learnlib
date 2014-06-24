@@ -33,10 +33,21 @@ import org.testng.annotations.Test;
 @Test
 public class KearnsVaziraniDFAIT extends AbstractDFALearnerIT {
 	
+	private static boolean[] BOOLEAN_VALUES = { false, true };
+	
 	@Override
 	protected <I> void addLearnerVariants(Alphabet<I> alphabet,
+			int targetSize,
 			DFAMembershipOracle<I> mqOracle, DFALearnerVariantList<I> variants) {
-		variants.addLearnerVariant("KearnsVaziraniDFA", new KearnsVaziraniDFA<>(alphabet, mqOracle));
+		KearnsVaziraniDFABuilder<I> builder = new KearnsVaziraniDFABuilder<>();
+		builder.setAlphabet(alphabet);
+		builder.setOracle(mqOracle);
+		
+		for(boolean repeatedEval : BOOLEAN_VALUES) {
+			builder.setRepeatedCounterexampleEvaluation(repeatedEval);
+			String name = "repeatedEval=" + repeatedEval;
+			variants.addLearnerVariant(name, builder.create());
+		}
 	}
 
 }

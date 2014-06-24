@@ -44,7 +44,7 @@ import net.automatalib.words.WordBuilder;
  * {@link ReuseNode}) and edges (see {@link ReuseEdge}) that is used by the
  * {@link ReuseOracle}:
  * <ul>
- * <li>Nodes may contain a system state (see {@link ReuseNode#getSystemState()})
+ * <li>Nodes may contain a system state (see {@link ReuseNode#fetchSystemState(boolean)})
  * that could be used for executing suffixes of membership queries. Each node
  * consists of a (possible empty) set of outgoing edges.
  * <li>Edges consists beside source and target node of input and output
@@ -56,7 +56,7 @@ import net.automatalib.words.WordBuilder;
  * nodes (only possible if {@link ReuseTreeBuilder#withFailureOutputs(Set)} or
  * {@link ReuseTreeBuilder#withInvariantInputs(Set)} is set).
  * 
- * @author Oliver Bauer <oliver.bauer@tu-dortmund.de>
+ * @author Oliver Bauer 
  * 
  * @param <S> system state class
  * @param <I> input symbol class
@@ -64,8 +64,7 @@ import net.automatalib.words.WordBuilder;
  */
 public class ReuseTree<S, I, O> extends AbstractGraph<ReuseNode<S, I, O>, ReuseEdge<S, I, O>>
 	implements DOTPlottableGraph<ReuseNode<S, I, O>, ReuseEdge<S, I, O>> {
-	
-	
+
 	public static class ReuseTreeBuilder<S,I,O> {
 		// mandatory
 		private final Alphabet<I> alphabet;
@@ -190,38 +189,72 @@ public class ReuseTree<S, I, O> extends AbstractGraph<ReuseNode<S, I, O>, ReuseE
 	 *         {@link ReuseTree} or {@code null} if unknown.
 	 */
 	public final synchronized Word<O> getOutput(final Word<I> query) {
-		if (query == null) {
-			String msg = "Query is not allowed to be null.";
-			throw new IllegalArgumentException(msg);
-		}
+        if (query == null) {
+            String msg = "Query is not allowed to be null.";
+            throw new IllegalArgumentException(msg);
+        }
 
-		WordBuilder<O> output = new WordBuilder<>();
+        final WordBuilder<O> output = new WordBuilder<>();
 
-		ReuseNode<S, I, O> sink = getRoot();
-		ReuseNode<S, I, O> node;
-		ReuseEdge<S, I, O> edge;
-		for (I symbol : query) {
-			int index = alphabet.getSymbolIndex(symbol);
-			edge = sink.getEdgeWithInput(index);
+        ReuseNode<S, I, O> sink = getRoot();
+        for (final I symbol : query) {
+            final ReuseEdge<S, I, O> edge = sink.getEdgeWithInput(alphabet.getSymbolIndex(symbol));
+            if (edge == null) {
+                return null;
+            }
+            output.add(edge.getOutput());
+            sink = edge.getTarget();
+        }
 
-			if (edge == null) {
-				return null;
-			}
-
-			node = edge.getTarget();
-			output.add(edge.getOutput());
-			sink = node;
-		}
-
-		return output.toWord();
+        return output.toWord();
 	}
+
+    /**
+     * Returns the known output for "reflexive" edges in the tree for the given query.
+     * All other symbols are set to {@code null}.
+     *
+     * @param query
+     *            Not allowed to be {@code null}.
+     * @return The partial output for {@code query} from the {@link ReuseTree}
+     *         with outputs for "reflexive" edges
+     *         filled with {@code null} for "non-reflexive"
+     *         and not-known parts of the input word.
+     */
+    public final synchronized Word<O> getPartialOutput(Word<I> query) {
+        if (query == null) {
+            String msg = "Query is not allowed to be null.";
+            throw new IllegalArgumentException(msg);
+        }
+
+        final WordBuilder<O> output = new WordBuilder<>();
+
+        ReuseNode<S, I, O> sink = getRoot();
+        for (final I symbol : query) {
+            final ReuseEdge<S, I, O> edge = sink.getEdgeWithInput(alphabet.getSymbolIndex(symbol));
+            // add null-pointers if no more outputs are available
+            if (edge == null) {
+                break;
+            }
+            // add output for "non-reflexive" edges
+            if(!sink.equals(edge.getTarget())) {
+                output.add(edge.getOutput());
+            }
+            // for "reflexive" edges add a null-pointer.
+            else {
+                output.add(null);
+            }
+            sink = edge.getTarget();
+        }
+        // fill the output with null-pointers to the size of the query.
+        output.repeatAppend(query.size() - output.size(), (O)null);
+        return output.toWord();
+    }
 
 	/**
 	 * This method removes all system states from the tree. The tree structure
 	 * remains, but there will be nothing for reusage.
 	 * <p>
-	 * The {@link SystemStateHandler} (
-	 * {@link #setSystemStateHandler(SystemStateHandler)}) will be informed
+	 * The {@link SystemStateHandler} will be informed
 	 * about all disposings.
 	 */
 	public final synchronized void disposeSystemstates() {
@@ -251,8 +284,7 @@ public class ReuseTree<S, I, O> extends AbstractGraph<ReuseNode<S, I, O>, ReuseE
 	 * {@link ReuseNode} and all existing system states will be disposed.
 	 * All invariant input symbols as well as all failure output symbols will remain.
 	 * <p>
-	 * The {@link SystemStateHandler} (
-	 * {@link #setSystemStateHandler(SystemStateHandler)}) will <b>not</b> be
+	 * The {@link SystemStateHandler} will <b>not</b> be
 	 * informed about any disposings.
 	 */
 	public synchronized void clearTree() {
@@ -307,7 +339,7 @@ public class ReuseTree<S, I, O> extends AbstractGraph<ReuseNode<S, I, O>, ReuseE
 		}
 		
 		S systemState = lastState.fetchSystemState(invalidateSystemstates);
-		
+
 		return new NodeResult<>(lastState, systemState, length);
 	}
 

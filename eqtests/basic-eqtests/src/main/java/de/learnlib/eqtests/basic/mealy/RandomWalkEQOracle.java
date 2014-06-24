@@ -21,15 +21,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.logging.Logger;
 
+import de.learnlib.api.EquivalenceOracle.MealyEquivalenceOracle;
+import de.learnlib.api.SUL;
+import de.learnlib.oracles.DefaultQuery;
+
 import net.automatalib.automata.transout.MealyMachine;
 import net.automatalib.commons.util.collections.CollectionsUtil;
 import net.automatalib.words.Word;
 import net.automatalib.words.WordBuilder;
-import de.learnlib.api.EquivalenceOracle.MealyEquivalenceOracle;
-import de.learnlib.api.SUL;
-import de.learnlib.oracles.DefaultQuery;
-import java.io.IOException;
-import java.util.logging.Level;
 
 /**
  * Performs a random walk over the hypothesis. A random walk restarts with a
@@ -37,12 +36,10 @@ import java.util.logging.Level;
  * steps or with a counterexample. The number of steps to termination may be
  * reset for every new search.
  * 
- * @param <A>
- *            hypothesis format
  * @param <I>
- *            input symbols class
+ *            input symbol type
  * @param <O>
- *            output symbol class
+ *            output symbol type
  * 
  * @author falkhowar
  */
@@ -112,22 +109,17 @@ public class RandomWalkEQOracle<I, O>
 	@Override
 	public DefaultQuery<I, Word<O>> findCounterExample(MealyMachine<?,I,?,O> hypothesis,
 			Collection<? extends I> inputs) {
-            try {
-                return doFindCounterExample(hypothesis, inputs);
-            } catch (IOException ex) {
-                Logger.getLogger(RandomWalkEQOracle.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            return null;
+		return doFindCounterExample(hypothesis, inputs);
 	}
 
 	private <S, T> DefaultQuery<I, Word<O>> doFindCounterExample(
-			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) throws IOException {
+			MealyMachine<S, I, T, O> hypothesis, Collection<? extends I> inputs) {
 		// reset termination counter?
 		if (resetStepCount) {
 			steps = 0;
 		}
-		
-		if(inputs.isEmpty()) {
+
+		if (inputs.isEmpty()) {
 			LOGGER.warning("Passed empty set of inputs to equivalence oracle; no counterexample can be found!");
 			return null;
 		}
@@ -138,44 +130,49 @@ public class RandomWalkEQOracle<I, O>
 		WordBuilder<I> wbIn = new WordBuilder<>();
 		WordBuilder<O> wbOut = new WordBuilder<>();
 
-                boolean first = true;
-                sul.pre();
-		while (steps < maxSteps) {
+		boolean first = true;
+		sul.pre();
+		try {
+			while (steps < maxSteps) {
 
-			// restart?
-			double restart = random.nextDouble();
-			if (restart < restartProbability) {
-				if (first) {
-                                    first = false;
-                                }
-                                else {
-                                    sul.post();
-                                }
-                                sul.pre();
-				cur = hypothesis.getInitialState();
-				wbIn.clear();
-				wbOut.clear();
+				// restart?
+				double restart = random.nextDouble();
+				if (restart < restartProbability) {
+					if (first) {
+						first = false;
+					} else {
+						sul.post();
+					}
+					sul.pre();
+					cur = hypothesis.getInitialState();
+					wbIn.clear();
+					wbOut.clear();
+				}
+
+				// step
+				steps++;
+				I in = choices.get(random.nextInt(bound));
+				O outSul;
+
+				outSul = sul.step(in);
+
+				T hypTrans = hypothesis.getTransition(cur, in);
+				O outHyp = hypothesis.getTransitionOutput(hypTrans);
+				wbIn.add(in);
+				wbOut.add(outSul);
+
+				// ce?
+				if (!outSul.equals(outHyp)) {
+					DefaultQuery<I, Word<O>> ce = new DefaultQuery<>(
+							wbIn.toWord());
+					ce.answer(wbOut.toWord());
+					return ce;
+				}
+				cur = hypothesis.getSuccessor(cur, in);
 			}
-
-			// step
-			steps++;
-			I in = choices.get(random.nextInt(bound));
-			O outSul = sul.step(in);
-			T hypTrans = hypothesis.getTransition(cur, in);
-			O outHyp = hypothesis.getTransitionOutput(hypTrans);
-			wbIn.add(in);
-			wbOut.add(outSul);
-
-			// ce?
-			if (!outSul.equals(outHyp)) {
-				DefaultQuery<I, Word<O>> ce = new DefaultQuery<>(wbIn.toWord());
-				ce.answer(wbOut.toWord());
-                                sul.post();
-				return ce;
-			}
-			cur = hypothesis.getSuccessor(cur, in);
+			return null;
+		} finally {
+			sul.post();
 		}
-                sul.post();
-		return null;
 	}
 }

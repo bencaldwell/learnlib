@@ -34,6 +34,7 @@ import net.automatalib.commons.util.mappings.MutableMapping;
 import net.automatalib.words.Alphabet;
 import net.automatalib.words.Word;
 
+import com.github.misberner.buildergen.annotations.GenerateBuilder;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 
@@ -47,14 +48,14 @@ import de.learnlib.oracles.DefaultQuery;
 
 /**
  *
- * @author Maik Merten <maikmerten@googlemail.com>
+ * @author Maik Merten 
  */
 public class MealyDHC<I, O> implements MealyLearner<I,O>,
 		AccessSequenceTransformer<I>, GlobalSuffixLearnerMealy<I, O> {
 	
 	
 	public static class BuilderDefaults {
-		public <I,O>
+		public static <I,O>
 		GlobalSuffixFinder<? super I,? super Word<O>> suffixFinder() {
 			return GlobalSuffixFinders.RIVEST_SCHAPIRE; 
 		}
@@ -108,6 +109,7 @@ public class MealyDHC<I, O> implements MealyLearner<I,O>,
 	 * @param initialSplitters the initial set of splitters, {@code null} or an empty collection will result
 	 * in the set of splitters being initialized as the set of alphabet symbols (interpreted as {@link Word}s) 
 	 */
+	@GenerateBuilder(defaults = BuilderDefaults.class, builderFinal = false)
 	public MealyDHC(Alphabet<I> alphabet,
 			MembershipOracle<I, Word<O>> oracle,
 			GlobalSuffixFinder<? super I, ? super Word<O>> suffixFinder,

@@ -21,9 +21,9 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import de.learnlib.api.SUL;
+import de.learnlib.api.SULException;
 import de.learnlib.statistics.Counter;
 import de.learnlib.statistics.StatisticSUL;
-import java.io.IOException;
 
 @ParametersAreNonnullByDefault
 public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
@@ -40,7 +40,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 * @see de.learnlib.api.SUL#pre()
 	 */
 	@Override
-	public void pre() throws IOException {
+	public void pre() {
 		sul.pre();
 	}
 
@@ -49,7 +49,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 * @see de.learnlib.api.SUL#post()
 	 */
         @Override
-	public void post() throws IOException {
+	public void post() {
 		sul.post();
 	}
 
@@ -58,7 +58,7 @@ public class SymbolCounterSUL<I, O> implements StatisticSUL<I,O> {
 	 */
 	@Override
 	@Nullable
-	public O step(@Nullable I in) throws IOException {
+	public O step(@Nullable I in) throws SULException {
 		counter.increment();
 		return sul.step(in);
 	}

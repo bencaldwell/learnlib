@@ -41,7 +41,7 @@ import net.automatalib.words.Alphabet;
  * directly, others are forwarded to the delegate oracle. When the delegate oracle has finished
  * processing these remaining queries, the results are incorporated into the cache.
  * 
- * @author Malte Isberner <malte.isberner@gmail.com>
+ * @author Malte Isberner 
  *
  * @param <I> input symbol class
  */
@@ -74,7 +74,7 @@ public class DFACacheOracle<I> implements DFALearningCacheOracle<I> {
 		this(new IncrementalDFADAGBuilder<>(alphabet), delegate);
 	}
 	
-	private DFACacheOracle(IncrementalDFABuilder<I> incDfa, MembershipOracle<I, Boolean> delegate) {
+	public DFACacheOracle(IncrementalDFABuilder<I> incDfa, MembershipOracle<I, Boolean> delegate) {
 		this(incDfa, new ReentrantLock(), delegate);
 	}
 	

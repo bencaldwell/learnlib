@@ -32,23 +32,23 @@ import de.learnlib.oracles.DefaultQuery;
  * of an initial hypothesis, which is subsequently refined using counterexamples
  * (see {@link EquivalenceOracle}). 
  * 
- * @author Maik Merten <maikmerten@googlemail.com>
- * @author Malte Isberner <malte.isberner@gmail.com>
+ * @author Maik Merten
+ * @author Malte Isberner
  *
- * @param <M> model class.
- * @param <I> input symbol class.
- * @param <O> output class.
+ * @param <M> model type
+ * @param <I> input symbol type
+ * @param <D> output domain type
  */
-public interface LearningAlgorithm<M, I, O> {
+public interface LearningAlgorithm<M, I, D> {
 	
-	public static interface DFALearner<I> extends LearningAlgorithm<DFA<?,I>,I,Boolean> {}
-	public static interface MealyLearner<I,O> extends LearningAlgorithm<MealyMachine<?,I,?,O>,I,Word<O>> {}
+	static interface DFALearner<I> extends LearningAlgorithm<DFA<?,I>,I,Boolean> {}
+	static interface MealyLearner<I,O> extends LearningAlgorithm<MealyMachine<?,I,?,O>,I,Word<O>> {}
 	
 	/**
 	 * Starts the model inference process, creating an initial hypothesis in the provided
 	 * model object. Please note that it should be illegal to invoke this method twice.
 	 */
-	public void startLearning();
+	void startLearning();
 	
 	/**
 	 * Triggers a refinement of the model by providing a counterexample.
@@ -61,7 +61,8 @@ public interface LearningAlgorithm<M, I, O> {
 	 * @return <tt>true</tt> if the counterexample triggered a refinement of the hypothesis,
 	 * <tt>false</tt> otherwise (i.e., it was no counterexample).
 	 */
-	public boolean refineHypothesis(@Nonnull DefaultQuery<I, O> ceQuery);
+	public boolean refineHypothesis(@Nonnull DefaultQuery<I, D> ceQuery);
+
 	
 	/**
 	 * Returns the current hypothesis model.

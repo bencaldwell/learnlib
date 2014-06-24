@@ -33,16 +33,16 @@ import de.learnlib.oracles.DefaultQuery;
  * This class provides the L*-style hypothesis construction. Implementing classes solely have
  * to specify how state and transition properties should be derived.
  *  
- * @author Malte Isberner <malte.isberner@gmail.com>
+ * @author Malte Isberner
  *
- * @param <A> automaton class, must be a subclass of {@link MutableDeterministic}
- * @param <I> input symbol class
- * @param <O> output class
- * @param <SP> state property class
- * @param <TP> transition property class
+ * @param <A> automaton type, must be a subclass of {@link MutableDeterministic}
+ * @param <I> input symbol type
+ * @param <D> output domain type
+ * @param <SP> state property type
+ * @param <TP> transition property type
  */
-public abstract class AbstractAutomatonLStar<A,I,O,S,T,SP,TP,AI extends MutableDeterministic<S,I,T,SP,TP>> extends
-		AbstractLStar<A, I, O> {
+public abstract class AbstractAutomatonLStar<A,I,D,S,T,SP,TP,AI extends MutableDeterministic<S,I,T,SP,TP>> extends
+		AbstractLStar<A, I, D> {
 	
 	private static final class StateInfo<S,I> {
 		private final Row<I> row;
@@ -74,7 +74,7 @@ public abstract class AbstractAutomatonLStar<A,I,O,S,T,SP,TP,AI extends MutableD
 	 * @param oracle the learning oracle
 	 */
 	public AbstractAutomatonLStar(Alphabet<I> alphabet,
-			MembershipOracle<I, O> oracle,
+			MembershipOracle<I, D> oracle,
 			AI internalHyp) {
 		super(alphabet, oracle);
 		this.internalHyp = internalHyp;
@@ -108,7 +108,6 @@ public abstract class AbstractAutomatonLStar<A,I,O,S,T,SP,TP,AI extends MutableD
 	 * For creating states and transitions, the {@link #stateProperty(Row)} and
 	 * {@link #transitionProperty(Row, int)} methods are used to derive the
 	 * respective properties.
-	 * @param model the model to output
 	 */
 	protected void updateInternalHypothesis() {
 		if(!table.isInitialized())
@@ -189,12 +188,12 @@ public abstract class AbstractAutomatonLStar<A,I,O,S,T,SP,TP,AI extends MutableD
 	}
 	
 	@Override
-	protected final void doRefineHypothesis(DefaultQuery<I,O> ceQuery) {
+	protected final void doRefineHypothesis(DefaultQuery<I,D> ceQuery) {
 		refineHypothesisInternal(ceQuery);
 		updateInternalHypothesis();
 	}
 	
-	protected void refineHypothesisInternal(DefaultQuery<I,O> ceQuery) {
+	protected void refineHypothesisInternal(DefaultQuery<I,D> ceQuery) {
 		super.doRefineHypothesis(ceQuery);
 	}
 	

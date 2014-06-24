@@ -25,26 +25,26 @@ import de.learnlib.api.MembershipOracle;
 /**
  * A closing strategy, determining how to proceed when an observation table needs to be closed.
  * 
- * @author Malte Isberner <malte.isberner@gmail.com>
+ * @author Malte Isberner
  *
  * @param <I> type variable for input symbol upper bound.
- * @param <O> type variable for output symbol upper bound.
+ * @param <D> type variable for output symbol upper bound.
  */
-public interface ClosingStrategy<I, O> {
+public interface ClosingStrategy<I, D> {
 	/**
 	 * Given a list of row equivalence classes, this method selects for each of the classes
 	 * one (representative) row which is being closed. This corresponds to selecting one of several
 	 * long prefixes (i.e., transitions reaching an unknown state) to be an access sequence.
 	 * <p>
 	 * By contract, the size of the the returned list <b>must</b> equal the size of the
-	 * <code>unclosedClasses</tt> argument.
+	 * {@code unclosedClasses} argument.
 	 * 
 	 * @param unclosedClasses the list of row equivalence classes
 	 * @param table the observation table
 	 * @param oracle the membership oracle
 	 * @return a selection of representative rows to be closed.
 	 */
-	public <RI extends I,RO extends O>
+	<RI extends I,RO extends D>
 	List<Row<RI>> selectClosingRows(List<List<Row<RI>>> unclosedClasses, ObservationTable<RI,RO> table,
 			MembershipOracle<RI,RO> oracle);
 }

@@ -18,47 +18,56 @@ package de.learnlib.oracles;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.automatalib.words.Word;
 import de.learnlib.api.MembershipOracle;
 import de.learnlib.api.Query;
 import de.learnlib.api.QueryAnswerer;
+
+import net.automatalib.automata.concepts.SuffixOutput;
+import net.automatalib.words.Word;
 
 @ParametersAreNonnullByDefault
 public abstract class MQUtil {
 	
 	@Nullable
-	public static <I,O> O output(MembershipOracle<I,O> oracle, Word<I> queryWord) {
+	public static <I,D> D output(MembershipOracle<I,D> oracle, Word<I> queryWord) {
 		return query(oracle, queryWord).getOutput();
 	}
 	
 	@Nullable
-	public static <I,O> O output(MembershipOracle<I,O> oracle, Word<I> prefix, Word<I> suffix) {
+	public static <I,D> D output(MembershipOracle<I,D> oracle, Word<I> prefix, Word<I> suffix) {
 		return query(oracle, prefix, suffix).getOutput();
 	}
 	
 	@Nonnull
-	public static <I,O> DefaultQuery<I,O> query(MembershipOracle<I,O> oracle, Word<I> prefix, Word<I> suffix) {
-		DefaultQuery<I,O> qry = new DefaultQuery<>(prefix, suffix);
+	public static <I,D> DefaultQuery<I,D> query(MembershipOracle<I,D> oracle, Word<I> prefix, Word<I> suffix) {
+		DefaultQuery<I,D> qry = new DefaultQuery<>(prefix, suffix);
 		oracle.processQueries(Collections.singleton(qry));
 		return qry;
 	}
 	
 	@Nonnull
-	public static <I,O> DefaultQuery<I,O> query(MembershipOracle<I,O> oracle, Word<I> queryWord) {
+	public static <I,D> DefaultQuery<I,D> query(MembershipOracle<I,D> oracle, Word<I> queryWord) {
 		return query(oracle, Word.<I>epsilon(), queryWord);
 	}
 	
-	public static <I,O> void answerQueries(QueryAnswerer<I,O> answerer, Collection<? extends Query<I,O>> queries) {
-		for(Query<I,O> query : queries) {
+	public static <I,D> void answerQueries(QueryAnswerer<I,D> answerer, Collection<? extends Query<I,D>> queries) {
+		for(Query<I,D> query : queries) {
 			Word<I> prefix = query.getPrefix();
 			Word<I> suffix = query.getSuffix();
-			O answer = answerer.answerQuery(prefix, suffix);
+			D answer = answerer.answerQuery(prefix, suffix);
 			query.answer(answer);
 		}
+	}
+	
+	public static <I,D> boolean isCounterexample(DefaultQuery<I, D> query, SuffixOutput<I, D> hyp) {
+		D qryOut = query.getOutput();
+		D hypOut = hyp.computeSuffixOutput(query.getPrefix(), query.getSuffix());
+		return !Objects.equals(qryOut, hypOut);
 	}
 }

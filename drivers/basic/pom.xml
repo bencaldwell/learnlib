@@ -23,7 +23,7 @@ http://www.gnu.de/documents/lgpl.en.html.
 	<parent>
 		<artifactId>learnlib-drivers</artifactId>
 		<groupId>de.learnlib</groupId>
-		<version>0.10.0-SNAPSHOT</version>
+		<version>0.10.2-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>        
 	</parent>
 
@@ -62,6 +62,10 @@ http://www.gnu.de/documents/lgpl.en.html.
 			<groupId>de.learnlib</groupId>
 			<artifactId>learnlib-simulator</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>de.learnlib</groupId>
+			<artifactId>learnlib-mapper</artifactId>
 		</dependency>
 	</dependencies>
 

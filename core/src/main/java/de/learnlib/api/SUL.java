@@ -32,12 +32,12 @@ public interface SUL<I, O> {
     /**
      * setup SUL.
      */
-    void pre() throws IOException;
+    void pre() throws SULException;
 
     /**
      * shut down SUL.
      */
-    void post() throws IOException;
+    void post() throws SULException;
     
     /**
      * make one step on the SUL.
@@ -46,5 +46,5 @@ public interface SUL<I, O> {
      * @return output of SUL
      */
     @Nullable
-    O step(@Nullable I in) throws IOException;
+    O step(@Nullable I in) throws SULException;
 }

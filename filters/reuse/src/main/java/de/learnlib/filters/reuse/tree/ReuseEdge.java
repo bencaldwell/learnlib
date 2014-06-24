@@ -22,7 +22,7 @@ package de.learnlib.filters.reuse.tree;
  * reflexive if domain knowledge is used (input is invariant and/or output is a
  * failure output).
  * 
- * @author Oliver Bauer <oliver.bauer@tu-dortmund.de>
+ * @author Oliver Bauer 
  *
  * @param <S> system state class
  * @param <I> input symbol class
@@ -80,7 +80,7 @@ public class ReuseEdge<S, I, O> {
 	/**
 	 * The respective input on this edge, never {@code null}.
 	 * 
-	 * @return input, not <code>null</node>
+	 * @return input, not {@code null}
 	 */
 	public final I getInput() {
 		return input;

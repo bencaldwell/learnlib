@@ -23,7 +23,7 @@ import net.automatalib.words.Word;
 import de.learnlib.api.Query;
 
 @ParametersAreNonnullByDefault
-public abstract class AbstractQuery<I, O> extends Query<I, O> {
+public abstract class AbstractQuery<I, D> extends Query<I, D> {
 
 	protected final Word<I> prefix;
 	protected final Word<I> suffix;
@@ -58,10 +58,10 @@ public abstract class AbstractQuery<I, O> extends Query<I, O> {
 	 * This method should be used by classes extending {@link AbstractQuery} for their
 	 * toString method to ensure output consistency.
 	 *
-	 * @return A string of the form "Query[<prefix>|<suffix> / <answer>]". If the query
-	 * has not been answered yet, <answer> will be null.
+	 * @return A string of the form {@code "Query[<prefix>|<suffix> / <answer>]"}. If the query
+	 * has not been answered yet, {@code <answer>} will be null.
 	 */
-	public String toStringWithAnswer(O answer) {
+	public String toStringWithAnswer(D answer) {
 		return "Query[" + prefix + '|' + suffix + " / " + answer + ']';
 	}
 }
