@@ -18,6 +18,7 @@ package de.learnlib.eqtests.timed;
 
 import de.learnlib.api.EquivalenceOracle;
 import de.learnlib.api.SULTimed;
+import de.learnlib.api.SULException;
 import de.learnlib.oracles.DefaultQuery;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -223,12 +224,12 @@ public class ClockExplorationEQOracle<I, O> implements
                         // Don't bother with any more suffixes
                         break;
                     }
-                } catch (IOException e) {
+                } catch (SULException e) {
                     LOGGER.warning("SUL connection failed while trimming clock guard: " + e.toString());
                 } finally {
                     try {
                         sul.post();
-                    } catch (IOException ex) {
+                    } catch (SULException ex) {
                         Logger.getLogger(ClockExplorationEQOracle.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }

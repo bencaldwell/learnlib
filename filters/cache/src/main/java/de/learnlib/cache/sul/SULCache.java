@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import de.learnlib.api.SUL;
+import de.learnlib.api.SULException;
 import de.learnlib.cache.LearningCache.MealyLearningCache;
 import de.learnlib.cache.mealy.MealyCacheConsistencyTest;
 

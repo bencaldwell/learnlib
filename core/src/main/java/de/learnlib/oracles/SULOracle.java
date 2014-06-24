@@ -65,10 +65,10 @@ public class SULOracle<I, O> extends AbstractSingleQueryOracle<I, Word<O>> imple
                     }
                     sul.post();
                     return wb.toWord();
-                } catch (IOException e) {
+                } catch (SULException e) {
                     try {
                         sul.post();
-                    } catch (IOException ex) {
+                    } catch (SULException ex) {
                         Logger.getLogger(SULOracle.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     retries++;
