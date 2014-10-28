@@ -6,7 +6,7 @@
 
 package de.learnlib.eqtests.timed;
 
-import com.caldwellsoftware.plclearning.PLCSUL;
+//import com.caldwellsoftware.plclearning.PLCSUL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,10 +102,9 @@ public class ClockExplorationEQOracleTest {
         // transition to 0 state
         hypothesis.addTransition(two, rst, zero, "0");
         
-        PLCSUL sul = null;
         int maxDepth = 3;
         // clock trimming oracle works?
-        ClockExplorationEQOracle eqoracle = new ClockExplorationEQOracle(sul, maxDepth);
+        ClockExplorationEQOracle eqoracle = new ClockExplorationEQOracle(null, maxDepth);
         
         HashMap<List<Symbol>,Long> uncertainPrefixes = eqoracle.findUncertainPrefixes(hypothesis,alphabet);
 
