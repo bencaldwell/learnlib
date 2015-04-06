@@ -1,4 +1,4 @@
-*.DS_Store
+.DS_Store
 .settings/
 .classpath
 .idea/
@@ -12,4 +12,7 @@ importers/
 /target/
 .factorypath
 C:\\nppdf32Log\\debuglog.txt
+
+
+
 _sync.bat
