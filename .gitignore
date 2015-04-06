@@ -13,5 +13,5 @@ importers/
 C:\\nppdf32Log\\debuglog.txt
 /release.properties
 pom.xml.releaseBackup
-
-
+_sync.bat
+*DS_Store
