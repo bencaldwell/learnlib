@@ -1,26 +1,23 @@
 /* Copyright (C) 2014 TU Dortmund
  * This file is part of LearnLib, http://www.learnlib.de/.
  * 
- * LearnLib is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 3.0 as published by the Free Software Foundation.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * 
- * LearnLib is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with LearnLib; if not, see
- * <http://www.gnu.de/documents/lgpl.en.html>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package de.learnlib.algorithms.kv.dfa;
 
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 
@@ -41,7 +38,6 @@ import de.learnlib.discriminationtree.DTNode;
 import de.learnlib.discriminationtree.DTNode.SplitResult;
 import de.learnlib.discriminationtree.DiscriminationTree.LCAInfo;
 import de.learnlib.oracles.DefaultQuery;
-import de.learnlib.oracles.MQUtil;
 
 
 /**
@@ -64,8 +60,6 @@ public class KearnsVaziraniDFA<I> implements DFALearner<I> {
 		}
 	}
 	
-	private static final TLongList EMPTY_LONG_LIST = new TLongArrayList(0);
-	
 	/**
 	 * The information associated with a state: it's access sequence (or access string),
 	 * and the list of incoming transitions.
@@ -78,7 +72,8 @@ public class KearnsVaziraniDFA<I> implements DFALearner<I> {
 		public final int id;
 		public final Word<I> accessSequence;
 		private DTNode<I, Boolean, StateInfo<I>> dtNode;
-		private TLongList incoming;
+//		private TLongList incoming;
+		private List<Long> incoming; // TODO: replace with primitive specialization
 		
 		public StateInfo(int id, Word<I> accessSequence) {
 			this.id = id;
@@ -88,16 +83,20 @@ public class KearnsVaziraniDFA<I> implements DFALearner<I> {
 		public void addIncoming(int sourceState, int transIdx) {
 			long encodedTrans = ((long)sourceState << 32L) | transIdx;
 			if(incoming == null) {
-				incoming = new TLongArrayList();
+//				incoming = new TLongArrayList();
+				incoming = new ArrayList<>(); // TODO: replace with primitive specialization
 			}
 			incoming.add(encodedTrans);
 		}
 		
-		public TLongList fetchIncoming() {
+//		public TLongList fetchIncoming() {
+		public List<Long> fetchIncoming() { // TODO: replace with primitive specialization
 			if(incoming == null || incoming.isEmpty()) {
-				return EMPTY_LONG_LIST;
+//				return EMPTY_LONG_LIST;
+				return Collections.emptyList(); // TODO: replace with primitive specialization
 			}
-			TLongList result = incoming;
+//			TLongList result = incoming;
+			List<Long> result = incoming; // TODO: replace with primitive specialization
 			this.incoming = null;
 			return result;
 		}
@@ -159,7 +158,7 @@ public class KearnsVaziraniDFA<I> implements DFALearner<I> {
 			
 			while(!expect.isEmpty()) {
 				Word<I> suffix = currNode.getDiscriminator();
-				boolean out = MQUtil.output(oracle, prefix, suffix);
+				boolean out = oracle.answerQuery(prefix, suffix);
 				if(out != expect.pop()) {
 					lcas[index] = new LCAInfo<>(currNode, !out, out);
 					return 1;
@@ -253,7 +252,8 @@ public class KearnsVaziraniDFA<I> implements DFALearner<I> {
 	private void splitState(StateInfo<I> stateInfo, Word<I> newPrefix, I sym, LCAInfo<I,Boolean,StateInfo<I>> separatorInfo) {
 		int state = stateInfo.id;
 		boolean oldAccepting = hypothesis.isAccepting(state);
-		TLongList oldIncoming = stateInfo.fetchIncoming();
+//		TLongList oldIncoming = stateInfo.fetchIncoming();
+		List<Long> oldIncoming = stateInfo.fetchIncoming(); // TODO: replace with primitive specialization
 		
 		StateInfo<I> newStateInfo = createState(newPrefix, oldAccepting);
 		
@@ -273,7 +273,8 @@ public class KearnsVaziraniDFA<I> implements DFALearner<I> {
 	}
 	
 	
-	private void updateTransitions(TLongList transList, DTNode<I, Boolean, StateInfo<I>> oldDtTarget) {
+//	private void updateTransitions(TLongList transList, DTNode<I, Boolean, StateInfo<I>> oldDtTarget) {
+	private void updateTransitions(List<Long> transList, DTNode<I, Boolean, StateInfo<I>> oldDtTarget) { // TODO: replace with primitive specialization
 		int numTrans = transList.size();
 		for(int i = 0; i < numTrans; i++) {
 			long encodedTrans = transList.get(i);
@@ -305,7 +306,7 @@ public class KearnsVaziraniDFA<I> implements DFALearner<I> {
 
 	
 	private void initialize() {
-		boolean initAccepting = MQUtil.output(oracle, Word.<I>epsilon()).booleanValue();
+		boolean initAccepting = oracle.answerQuery(Word.<I>epsilon()).booleanValue();
 		StateInfo<I> initStateInfo = createInitialState(initAccepting);
 		
 		DTNode<I, Boolean, StateInfo<I>> root = discriminationTree.getRoot();

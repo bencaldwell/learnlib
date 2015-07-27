@@ -1,18 +1,17 @@
 /* Copyright (C) 2014 TU Dortmund
  * This file is part of LearnLib, http://www.learnlib.de/.
  * 
- * LearnLib is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 3.0 as published by the Free Software Foundation.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * 
- * LearnLib is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with LearnLib; if not, see
- * <http://www.gnu.de/documents/lgpl.en.html>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package de.learnlib.eqtests.basic;
 
@@ -21,6 +20,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import com.google.common.collect.Iterables;
 
 import net.automatalib.automata.UniversalDeterministicAutomaton;
 import net.automatalib.automata.concepts.Output;
@@ -34,6 +35,7 @@ import net.automatalib.words.WordBuilder;
 import de.learnlib.api.EquivalenceOracle;
 import de.learnlib.api.MembershipOracle;
 import de.learnlib.oracles.DefaultQuery;
+import de.learnlib.oracles.MQUtil;
 
 /**
  * Implements an equivalence test by applying the Wp-method test on the given hypothesis automaton,
@@ -129,12 +131,13 @@ public class WpMethodEQOracle<A extends UniversalDeterministicAutomaton<?, I, ?,
 		
 		for(List<? extends I> middle : CollectionsUtil.allTuples(inputs, 1, maxDepth)) {
 			for(Word<I> trans : transitions) {
-				S state = hypothesis.getState(trans);
+				S state = hypothesis.getState(Iterables.concat(trans, middle));
 				List<Word<I>> localSuffixes = localSuffixSets.get(state);
 				if(localSuffixes == null) {
 					localSuffixes = Automata.stateCharacterizingSet(hypothesis, inputs, state);
-					if(localSuffixes.isEmpty())
+					if(localSuffixes.isEmpty()) {
 						localSuffixes = Collections.singletonList(Word.<I>epsilon());
+					}
 					localSuffixSets.put(state, localSuffixes);
 				}
 				
@@ -142,11 +145,11 @@ public class WpMethodEQOracle<A extends UniversalDeterministicAutomaton<?, I, ?,
 					wb.append(trans).append(middle).append(suffix);
 					Word<I> queryWord = wb.toWord();
 					wb.clear();
-					DefaultQuery<I,D> query = new DefaultQuery<>(queryWord);
+					DefaultQuery<I,D> query = MQUtil.query(sulOracle, queryWord);
 					D hypOutput = output.computeOutput(queryWord);
-					sulOracle.processQueries(Collections.singleton(query));
-					if(!Objects.equals(hypOutput, query.getOutput()))
+					if(!Objects.equals(hypOutput, query.getOutput())) {
 						return query;
+					}
 				}
 			}
 		}
