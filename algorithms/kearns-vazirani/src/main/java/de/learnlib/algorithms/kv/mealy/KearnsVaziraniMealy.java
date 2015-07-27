@@ -1,26 +1,23 @@
 /* Copyright (C) 2014 TU Dortmund
  * This file is part of LearnLib, http://www.learnlib.de/.
  * 
- * LearnLib is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 3.0 as published by the Free Software Foundation.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * 
- * LearnLib is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with LearnLib; if not, see
- * <http://www.gnu.de/documents/lgpl.en.html>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package de.learnlib.algorithms.kv.mealy;
 
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -44,7 +41,6 @@ import de.learnlib.discriminationtree.DiscriminationTree.LCAInfo;
 import de.learnlib.discriminationtree.MultiDTree;
 import de.learnlib.mealy.MealyUtil;
 import de.learnlib.oracles.DefaultQuery;
-import de.learnlib.oracles.MQUtil;
 
 
 /**
@@ -56,8 +52,6 @@ import de.learnlib.oracles.MQUtil;
  * @param <O> output symbol type
  */
 public class KearnsVaziraniMealy<I,O> implements MealyLearner<I,O> {
-	
-	private static final TLongList EMPTY_LONG_LIST = new TLongArrayList(0);
 	
 	static final class BuilderDefaults {
 		public static boolean repeatedCounterexampleEvaluation() {
@@ -72,7 +66,8 @@ public class KearnsVaziraniMealy<I,O> implements MealyLearner<I,O> {
 		public final int id;
 		public final Word<I> accessSequence;
 		public DTNode<I, Word<O>, StateInfo<I,O>> dtNode;
-		private TLongList incoming;
+//		private TLongList incoming;
+		private List<Long> incoming; // TODO: replace with primitive specialization
 		
 		public StateInfo(int id, Word<I> accessSequence) {
 			this.accessSequence = accessSequence.trimmed();
@@ -82,16 +77,20 @@ public class KearnsVaziraniMealy<I,O> implements MealyLearner<I,O> {
 		public void addIncoming(int sourceState, int transIdx) {
 			long encodedTrans = ((long)sourceState << 32L) | transIdx;
 			if(incoming == null) {
-				incoming = new TLongArrayList();
+//				incoming = new TLongArrayList();
+				incoming = new ArrayList<>(); // TODO: replace with primitive specialization
 			}
 			incoming.add(encodedTrans);
 		}
 		
-		public TLongList fetchIncoming() {
+//		public TLongList fetchIncoming() {
+		public List<Long> fetchIncoming() { // TODO: replace with primitive specialization
 			if(incoming == null || incoming.isEmpty()) {
-				return EMPTY_LONG_LIST;
+//				return EMPTY_LONG_LIST;
+				return Collections.emptyList(); // TODO: replace with primitive specialization
 			}
-			TLongList result = incoming;
+//			TLongList result = incoming;
+			List<Long> result = incoming;
 			this.incoming = null;
 			return result;
 		}
@@ -154,7 +153,7 @@ public class KearnsVaziraniMealy<I,O> implements MealyLearner<I,O> {
 			
 			while(!expect.isEmpty()) {
 				Word<I> suffix = currNode.getDiscriminator();
-				Word<O> out = MQUtil.output(oracle, prefix, suffix);
+				Word<O> out = oracle.answerQuery(prefix, suffix);
 				Word<O> e = expect.pop();
 				if(!Objects.equals(out, e)) {
 					lcas[index] = new LCAInfo<>(currNode, e, out);
@@ -248,7 +247,8 @@ public class KearnsVaziraniMealy<I,O> implements MealyLearner<I,O> {
 	private void splitState(StateInfo<I,O> stateInfo, Word<I> newPrefix, I sym, LCAInfo<I,Word<O>,StateInfo<I,O>> separatorInfo) {
 		int state = stateInfo.id;
 		
-		TLongList oldIncoming = stateInfo.fetchIncoming();
+//		TLongList oldIncoming = stateInfo.fetchIncoming();
+		List<Long> oldIncoming = stateInfo.fetchIncoming(); // TODO: replace with primitive specialization
 		
 		StateInfo<I,O> newStateInfo = createState(newPrefix);
 		
@@ -284,7 +284,8 @@ public class KearnsVaziraniMealy<I,O> implements MealyLearner<I,O> {
 	}
 	
 	
-	private void updateTransitions(TLongList transList, DTNode<I,Word<O>,StateInfo<I,O>> oldDtTarget) {
+//	private void updateTransitions(TLongList transList, DTNode<I,Word<O>,StateInfo<I,O>> oldDtTarget) {
+	private void updateTransitions(List<Long> transList, DTNode<I,Word<O>,StateInfo<I,O>> oldDtTarget) { // TODO: replace with primitive specialization
 		int numTrans = transList.size();
 		for(int i = 0; i < numTrans; i++) {
 			long encodedTrans = transList.get(i);
@@ -352,7 +353,7 @@ public class KearnsVaziraniMealy<I,O> implements MealyLearner<I,O> {
 		for(int i = 0; i < alphabetSize; i++) {
 			I sym = alphabet.getSymbol(i);
 			
-			O output = MQUtil.output(oracle, accessSequence, Word.fromLetter(sym)).firstSymbol();
+			O output = oracle.answerQuery(accessSequence, Word.fromLetter(sym)).firstSymbol();
 			
 			Word<I> transAs = accessSequence.append(sym);
 			

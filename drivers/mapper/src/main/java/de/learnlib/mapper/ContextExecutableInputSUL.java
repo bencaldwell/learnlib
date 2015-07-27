@@ -1,18 +1,17 @@
 /* Copyright (C) 2014 TU Dortmund
  * This file is part of LearnLib, http://www.learnlib.de/.
  *
- * LearnLib is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 3.0 as published by the Free Software Foundation.
- *
- * LearnLib is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with LearnLib; if not, see
- * <http://www.gnu.de/documents/lgpl.en.html>.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package de.learnlib.mapper;
 
@@ -33,6 +32,18 @@ import de.learnlib.mapper.api.ContextExecutableInput;
 public class ContextExecutableInputSUL<I extends ContextExecutableInput<? extends O, ? super C>, O, C>
 		extends AbstractContextExecutableInputSUL<I, O, C> {
 	
+	/**
+	 * Facility for creating and disposing of contexts on which {@link ContextExecutableInput}s
+	 * operate.
+	 * <p>
+	 * An implementation of this interface must be thread-safe, i.e., both the {@link #createContext()}
+	 * and {@link #disposeContext(Object)} methods must be reentrant. Furthermore, it must not make
+	 * any assumptions as to the particular sequence in which these methods are called.
+	 * 
+	 * @author Malte Isberner
+	 *
+	 * @param <C> context type
+	 */
 	public static interface ContextHandler<C> {
 		public C createContext();
 		public void disposeContext(C context);
@@ -54,4 +65,13 @@ public class ContextExecutableInputSUL<I extends ContextExecutableInput<? extend
 		contextHandler.disposeContext(context);
 	}
 	
+	@Override
+	public boolean canFork() {
+		return true;
+	}
+	
+	@Override
+	public SUL<I,O> fork() {
+		return new ContextExecutableInputSUL<>(contextHandler);
+	}
 }

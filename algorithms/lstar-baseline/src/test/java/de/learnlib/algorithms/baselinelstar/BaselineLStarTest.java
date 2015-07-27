@@ -1,18 +1,17 @@
 /* Copyright (C) 2013 TU Dortmund
  * This file is part of LearnLib, http://www.learnlib.de/.
  * 
- * LearnLib is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 3.0 as published by the Free Software Foundation.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * 
- * LearnLib is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with LearnLib; if not, see
- * <http://www.gnu.de/documents/lgpl.en.html>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package de.learnlib.algorithms.baselinelstar;
 
@@ -28,7 +27,6 @@ import org.testng.annotations.Test;
 
 import de.learnlib.examples.dfa.ExampleAngluin;
 import de.learnlib.oracles.DefaultQuery;
-import de.learnlib.oracles.SafeOracle;
 import de.learnlib.oracles.SimulatorOracle;
 
 public class BaselineLStarTest {
@@ -42,8 +40,7 @@ public class BaselineLStarTest {
 		DFA<?, Integer> dfa = angluinExample.getReferenceAutomaton();
 		Alphabet<Integer> alphabet = angluinExample.getAlphabet();
 
-		SimulatorOracle<Integer, Boolean> dso = new SimulatorOracle<>(dfa);
-		SafeOracle<Integer, Boolean> oracle = new SafeOracle<>(dso);
+		SimulatorOracle<Integer, Boolean> oracle = new SimulatorOracle<>(dfa);
 
 		angluin = new BaselineLStar<>(alphabet, oracle);
 	}

@@ -1,20 +1,21 @@
 /* Copyright (C) 2014 TU Dortmund
  * This file is part of LearnLib, http://www.learnlib.de/.
  *
- * LearnLib is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 3.0 as published by the Free Software Foundation.
- *
- * LearnLib is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with LearnLib; if not, see
- * <http://www.gnu.de/documents/lgpl.en.html>.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package de.learnlib.mapper.api;
+
+import javax.annotation.Nonnull;
 
 import com.google.common.base.Optional;
 
@@ -31,6 +32,16 @@ import de.learnlib.mapper.Mappers;
  * facilities to map exceptions occurring at the concrete level to symbols at the abstract level.
  * <p>
  * The class {@link Mappers} provides static utility functions for manipulating mappers.
+ * <p>
+ * Mappers, like {@link SUL}s, may be {@link SUL#fork() forkable}. The requirements and semantics
+ * of {@link #fork()} are basically the same as set forth for {@link SUL#fork()}. Stateless
+ * mappers (e.g., with empty {@link #pre()} and {@link #post()} implementations), should always
+ * be forkable, and {@link #fork()} may just return {@code this}. Stateful mappers may require
+ * more sophisticated fork logic, but in general it should be possible to fork them as well.
+ * <p>
+ * Note: despite the above recommendation that mappers should almost always be forkable,
+ * the default implementations of {@link #canFork()} and {@link #fork()} indicate
+ * non-forkability for backwards compatibility reasons.
  * 
  * @author Malte Isberner
  *
@@ -136,4 +147,30 @@ public interface Mapper<AI,AO,CI,CO> {
 	public MappedException<? extends AO> mapUnwrappedException(RuntimeException exception)
 			throws SULException, RuntimeException;
 	
+	
+	/**
+	 * Checks whether it is possible to {@link #fork() fork} this mapper.
+	 * @return {@code true} if this mapper can be forked, {@code false} otherwise.
+	 */
+	default public boolean canFork() {
+		return false;
+	}
+	
+	/**
+	 * Forks this mapper, i.e., returns a mapper that behaves in exactly the same way
+	 * as this mapper, but allows for being used independently of this mapper.
+	 * <p>
+	 * If {@link #canFork()} returned {@code false}, this method must throw an
+	 * {@link UnsupportedOperationException}. Otherwise, it must return a
+	 * non-{@code null} object representing the fork of this mapper.
+	 * 
+	 * @return a fork of this mapper (for stateless mappers, generally {@code this} should
+	 * be returned)
+	 * @throws UnsupportedOperationException if this mapper is not forkable
+	 */
+	@Nonnull
+	default public Mapper<AI, AO, CI, CO> fork()
+			throws UnsupportedOperationException {
+		throw new UnsupportedOperationException();
+	}
 }
